@@ -9,11 +9,6 @@
       "type": "image/svg+xml",
       "sizes": "192x192 512x512",
       "purpose": "any maskable"
-    },
-     {
-      "src": "./vite.svg",
-      "type": "image/svg+xml",
-      "sizes": "any"
     }
   ],
   "start_url": ".",
