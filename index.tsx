@@ -144,7 +144,7 @@ const responseSchema = {
 async function generateMedicalAnalysis(pdfText: string): Promise<AnalysisResult> {
     const API_KEY = process.env.API_KEY;
     if (!API_KEY) {
-      throw new Error("API Key not found. Please select an API Key to continue.");
+      throw new Error("API Key not found. Please select or enter an API Key to continue.");
     }
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 
@@ -176,17 +176,17 @@ async function generateMedicalAnalysis(pdfText: string): Promise<AnalysisResult>
         }
         return parsedResult as AnalysisResult;
     } catch (error) {
-        if (error instanceof Error && error.message.includes("Requested entity was not found.")) {
-             throw new Error("The selected API Key is no longer valid. Please select a different key.");
-        }
         console.error("Error calling Gemini API:", error);
+        if (error instanceof Error && (error.message.includes("API key not valid") || error.message.includes("Requested entity was not found."))) {
+             throw new Error("The provided API Key is not valid. Please check your key.");
+        }
         throw new Error("Failed to generate analysis from the AI model.");
     }
 }
 
 // --- components/LoadingSpinner.tsx ---
 const LoadingSpinner: React.FC = () => (
-  <svg className="animate-spin h-10 w-10 text-blue-600 mx-auto" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24">
+  <svg className="animate-spin h-10 w-10 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
   </svg>
@@ -354,20 +354,34 @@ function App() {
   const [appState, setAppState] = useState<AppState>('home');
   const [library, setLibrary] = useState<SavedArticle[]>([]);
   const [isCurrentArticleSaved, setIsCurrentArticleSaved] = useState<boolean>(false);
+  
   const [apiKeySelected, setApiKeySelected] = useState(false);
   const [isCheckingApiKey, setIsCheckingApiKey] = useState(true);
+  const [isAiStudio, setIsAiStudio] = useState(false);
+  const [manualApiKey, setManualApiKey] = useState('');
 
   useEffect(() => { setLibrary(getLibrary()); }, []);
 
   useEffect(() => {
     const checkApiKey = async () => {
       setIsCheckingApiKey(true);
-      if (typeof window.aistudio?.hasSelectedApiKey === 'function') {
+      const isStudio = typeof window.aistudio?.hasSelectedApiKey === 'function';
+      setIsAiStudio(isStudio);
+
+      if (isStudio) {
         const hasKey = await window.aistudio.hasSelectedApiKey();
         setApiKeySelected(hasKey);
       } else {
-        // Fallback for environments where aistudio is not available
-        setApiKeySelected(false);
+        // Non-AI Studio environment. Check sessionStorage.
+        const storedKey = sessionStorage.getItem('gemini_api_key');
+        if (storedKey) {
+          if (window.process?.env) {
+            window.process.env.API_KEY = storedKey;
+          }
+          setApiKeySelected(true);
+        } else {
+          setApiKeySelected(false);
+        }
       }
       setIsCheckingApiKey(false);
     };
@@ -375,11 +389,22 @@ function App() {
   }, []);
 
   const handleSelectApiKey = async () => {
-    if (typeof window.aistudio?.openSelectKey === 'function') {
+    if (isAiStudio && typeof window.aistudio?.openSelectKey === 'function') {
       await window.aistudio.openSelectKey();
-      setApiKeySelected(true);
+      setApiKeySelected(true); // Assume success after dialog
+    }
+  };
+
+  const handleSaveManualKey = () => {
+    const key = manualApiKey.trim();
+    if (key) {
+        sessionStorage.setItem('gemini_api_key', key);
+        if (window.process?.env) {
+            window.process.env.API_KEY = key;
+        }
+        setApiKeySelected(true);
     } else {
-        alert("API Key selection is not available in this environment.");
+        alert('Please enter a valid API Key.');
     }
   };
 
@@ -402,8 +427,12 @@ function App() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
       console.error(err);
-      if (errorMessage.includes("API Key not found") || errorMessage.includes("longer valid")) {
-          setError(`${errorMessage} Please re-select your key.`);
+      if (errorMessage.includes("API Key not found") || errorMessage.includes("API key not valid")) {
+          sessionStorage.removeItem('gemini_api_key');
+          if (window.process?.env) {
+              delete window.process.env.API_KEY;
+          }
+          setError(`There was an issue with the API Key: "${errorMessage}". Please enter or select a valid key and try again.`);
           setApiKeySelected(false);
           setAppState('home');
       } else {
@@ -429,18 +458,48 @@ function App() {
     }
 
     if (!apiKeySelected) {
-        return (
-            <div className="max-w-xl mx-auto text-center p-8 bg-white rounded-lg shadow-md mt-10">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">API Key Required</h2>
-                <p className="text-gray-600 mb-6">To use this application, you need to select a Google AI Studio API key. Your key is used only for this session and is not stored.</p>
-                <button onClick={handleSelectApiKey} className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
-                    Select API Key
-                </button>
-                <p className="text-xs text-gray-500 mt-4">
-                    For information on billing, please visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ai.google.dev/gemini-api/docs/billing</a>.
-                </p>
-            </div>
-        );
+        if (isAiStudio) {
+            return (
+                <div className="max-w-xl mx-auto text-center p-8 bg-white rounded-lg shadow-md mt-10">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">API Key Required</h2>
+                    <p className="text-gray-600 mb-6">To use this application, you need to select a Google AI Studio API key. Your key is used only for this session and is not stored.</p>
+                    <button onClick={handleSelectApiKey} className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
+                        Select API Key
+                    </button>
+                    <p className="text-xs text-gray-500 mt-4">
+                        For information on billing, please visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ai.google.dev/gemini-api/docs/billing</a>.
+                    </p>
+                </div>
+            );
+        } else {
+             return (
+                <div className="max-w-xl mx-auto text-center p-8 bg-white rounded-lg shadow-md mt-10">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">API Key Required</h2>
+                    <p className="text-gray-600 mb-6">Please enter your Google AI Studio API key to continue. Your key is stored in your browser's session and is not sent anywhere else.</p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <input 
+                            type="password" 
+                            value={manualApiKey} 
+                            onChange={(e) => setManualApiKey(e.target.value)} 
+                            placeholder="Enter your API Key"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <button 
+                            onClick={handleSaveManualKey} 
+                            className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+                        >
+                            Save Key
+                        </button>
+                    </div>
+                     <p className="text-xs text-gray-500 mt-4">
+                        You can get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                        For information on billing, please visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ai.google.dev/gemini-api/docs/billing</a>.
+                    </p>
+                </div>
+            );
+        }
     }
       
     switch (appState) { case 'home': return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; case 'library': return <LibraryView library={library} onViewArticle={handleViewSavedArticle} onGoHome={handleResetToHome} onDeleteArticle={handleDeleteArticle} />; case 'analysis': if (!analysisResult && !isLoading && !error) { return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />; } return renderAnalysisView(); default: return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; } };
