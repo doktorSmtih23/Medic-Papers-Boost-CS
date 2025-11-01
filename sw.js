@@ -3,7 +3,6 @@ const CACHE_NAME = 'medic-papers-boost-cs-cache-v1';
 const URLS_TO_CACHE = [
   './',
   './index.html',
-  './index.tsx',
   './manifest.json',
   './vite.svg',
   'https://cdn.tailwindcss.com',
