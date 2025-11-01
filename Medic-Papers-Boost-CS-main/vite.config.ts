@@ -17,7 +17,8 @@ export default defineConfig(({ mode }) => {
       resolve: {
         alias: {
           // Fix: `__dirname` is not available in an ES module context. `process.cwd()` is used to resolve the project root.
-          '@': path.resolve(process.cwd(), '.'),
+          // FIX: Replaced `process.cwd()` to avoid a TypeScript type error. `path.resolve('.')` correctly resolves to the project root directory when Vite is run.
+          '@': path.resolve('.'),
         }
       }
     };
