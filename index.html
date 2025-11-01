@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-M" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medic Papers Boost CS</title>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.min.mjs" type="module"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      @media print {
+        body, html {
+            background: white !important;
+        }
+
+        .no-print {
+            display: none !important;
+        }
+        
+        .print-reset-layout {
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            max-width: none !important;
+            background: transparent !important;
+        }
+
+        #print-section {
+            padding: 2rem !important;
+        }
+
+        #print-section .card,
+        #print-section section,
+        #print-section blockquote,
+        #print-section table,
+        #print-section .table-wrapper {
+            page-break-inside: avoid !important;
+        }
+
+        #print-section * {
+            color: #000 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+        }
+
+        #print-section table,
+        #print-section th,
+        #print-section td {
+            border-color: #ddd !important;
+        }
+
+        #print-section .tooltip .tooltiptext {
+            display: none !important;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "pdfjs-dist": "https://aistudiocdn.com/pdfjs-dist@^5.4.296"
+  }
+}
+</script>
+</head>
+  <body class="bg-gray-50">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
