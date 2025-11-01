@@ -1,4 +1,3 @@
-
 const CACHE_NAME = 'medic-papers-boost-cs-cache-v1';
 const URLS_TO_CACHE = [
   './',
@@ -22,39 +21,40 @@ self.addEventListener('install', event => {
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
-      .then(response => {
+      .then(cachedResponse => {
         // Cache hit - return response
-        if (response) {
-          return response;
+        if (cachedResponse) {
+          return cachedResponse;
         }
 
-        // Clone the request because it's a stream and can only be consumed once.
-        const fetchRequest = event.request.clone();
-
-        return fetch(fetchRequest).then(
-          response => {
-            // Check if we received a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              if (event.request.url.startsWith('https://aistudiocdn.com/')) {
-                 // Don't cache opaque responses from CDNs
-                 return response;
-              }
+        return fetch(event.request).then(
+          networkResponse => {
+            // Check if we received a valid response.
+            // We don't cache opaque responses (from no-cors requests) or errors.
+            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type === 'opaque') {
+              return networkResponse;
             }
-            
-            // Clone the response because it's a stream and can only be consumed once.
-            const responseToCache = response.clone();
+
+            // IMPORTANT: Clone the response. A response is a stream
+            // and because we want the browser to consume the response
+            // as well as the cache consuming the response, we need
+            // to clone it so we have two streams.
+            const responseToCache = networkResponse.clone();
 
             caches.open(CACHE_NAME)
               .then(cache => {
-                // We don't cache POST requests or chrome extension requests
-                if(event.request.method === 'GET' && !event.request.url.startsWith('chrome-extension://')) {
+                // We only cache GET requests.
+                if (event.request.method === 'GET') {
                     cache.put(event.request, responseToCache);
                 }
               });
 
-            return response;
+            return networkResponse;
           }
-        );
+        ).catch(error => {
+          console.error('Fetching failed:', error);
+          throw error;
+        });
       })
   );
 });
