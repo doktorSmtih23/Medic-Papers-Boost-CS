@@ -109,7 +109,7 @@ export default function App() {
     // Register the service worker for PWA capabilities
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(registration => {
+        navigator.serviceWorker.register('./sw.js').then(registration => {
           console.log('SW registered: ', registration);
           setPwaStatus('✅ Ready to be installed');
         }).catch(registrationError => {
