@@ -18,7 +18,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLi
 type View = 'summary' | 'quiz' | 'flashcards';
 type AppState = 'home' | 'analysis' | 'library';
 
-const Header: React.FC<{ onViewLibrary: () => void; pwaStatus: string }> = ({ onViewLibrary, pwaStatus }) => (
+const Header: React.FC<{ onViewLibrary: () => void }> = ({ onViewLibrary }) => (
   <header className="bg-white shadow-sm">
     <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -30,7 +30,6 @@ const Header: React.FC<{ onViewLibrary: () => void; pwaStatus: string }> = ({ on
             <h1 className="text-2xl font-bold text-gray-900">Medic Papers Boost CS</h1>
         </div>
         <div className="flex items-center gap-4">
-            <span className="text-xs text-gray-500 font-mono hidden sm:block" title="Progressive Web App Status">{pwaStatus}</span>
             <button
                 onClick={onViewLibrary}
                 className="px-4 py-2 bg-blue-100 text-blue-700 font-semibold rounded-lg hover:bg-blue-200 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -101,27 +100,9 @@ export default function App() {
   const [appState, setAppState] = useState<AppState>('home');
   const [library, setLibrary] = useState<SavedArticle[]>([]);
   const [isCurrentArticleSaved, setIsCurrentArticleSaved] = useState<boolean>(false);
-  const [pwaStatus, setPwaStatus] = useState<string>('PWA: Checking...');
 
   useEffect(() => {
     setLibrary(getLibrary());
-
-    // Register the service worker for PWA capabilities
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then(registration => {
-          console.log('SW registered: ', registration);
-          setPwaStatus('✅ Ready to be installed');
-        }).catch(registrationError => {
-          console.log('SW registration failed (expected in this environment): ', registrationError);
-          // This environment may block service workers. We'll show a success-like message
-          // to confirm the code is in place, and explain it's installable on a live server.
-          setPwaStatus('✅ PWA configured (Install from live site)');
-        });
-      });
-    } else {
-        setPwaStatus('❌ PWA not supported');
-    }
   }, []);
 
   const extractTextFromPdf = async (file: File): Promise<string> => {
@@ -321,7 +302,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="no-print">
-        <Header onViewLibrary={handleViewLibrary} pwaStatus={pwaStatus} />
+        <Header onViewLibrary={handleViewLibrary} />
       </div>
       <main>
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 print-reset-layout">
