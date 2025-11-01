@@ -1,5 +1,6 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Quiz, Question } from '../types';
+import type { Quiz, Question } from '../types.ts';
 
 interface QuizViewProps {
   quizData: Quiz;

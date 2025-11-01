@@ -1,5 +1,6 @@
+
 import React from 'react';
-import type { SavedArticle } from '../types';
+import type { SavedArticle } from '../types.ts';
 
 interface LibraryViewProps {
   library: SavedArticle[];

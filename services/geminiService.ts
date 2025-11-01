@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
-import type { AnalysisResult } from '../types';
+import type { AnalysisResult } from '../types.ts';
 
 const API_KEY = process.env.API_KEY;
 if (!API_KEY) {

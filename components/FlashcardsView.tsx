@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { Flashcard } from '../types';
+import type { Flashcard } from '../types.ts';
 
 interface FlashcardsViewProps {
   flashcards: Flashcard[];

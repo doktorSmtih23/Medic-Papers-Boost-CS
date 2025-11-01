@@ -1,15 +1,15 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Home } from './components/Home';
-import { FileUpload } from './components/FileUpload';
-import { SummaryView } from './components/SummaryView';
-import { QuizView } from './components/QuizView';
-import { FlashcardsView } from './components/FlashcardsView';
-import { LoadingSpinner } from './components/LoadingSpinner';
-import { LibraryView } from './components/LibraryView';
-import { generateMedicalAnalysis } from './services/geminiService';
-import { getLibrary, saveArticle, deleteArticle } from './services/libraryService';
-import type { AnalysisResult, SavedArticle } from './types';
+import { Home } from './components/Home.tsx';
+import { FileUpload } from './components/FileUpload.tsx';
+import { SummaryView } from './components/SummaryView.tsx';
+import { QuizView } from './components/QuizView.tsx';
+import { FlashcardsView } from './components/FlashcardsView.tsx';
+import { LoadingSpinner } from './components/LoadingSpinner.tsx';
+import { LibraryView } from './components/LibraryView.tsx';
+import { generateMedicalAnalysis } from './services/geminiService.ts';
+import { getLibrary, saveArticle, deleteArticle } from './services/libraryService.ts';
+import type { AnalysisResult, SavedArticle } from './types.ts';
 
 // PDF.js worker setup
 import * as pdfjsLib from 'pdfjs-dist';
