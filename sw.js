@@ -1,93 +1,110 @@
-const CACHE_NAME = 'medic-papers-boost-cs-cache-v2'; // New version
+const CACHE_NAME = 'medic-papers-boost-cs-cache-v3'; // Version bump to trigger update
 const URLS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  // Main external dependencies for offline functionality
+  // Dependencies
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.min.mjs',
   'https://unpkg.com/@babel/standalone/babel.min.js',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+  // Main app files for offline capability
+  './index.tsx',
+  './App.tsx',
+  './types.ts',
+  './components/Home.tsx',
+  './components/FileUpload.tsx',
+  './components/SummaryView.tsx',
+  './components/QuizView.tsx',
+  './components/FlashcardsView.tsx',
+  './components/LoadingSpinner.tsx',
+  './components/LibraryView.tsx',
+  './services/geminiService.ts',
+  './services/libraryService.ts',
 ];
 
+// On install, cache the app shell and immediately activate.
 self.addEventListener('install', event => {
+  console.log('[SW] Install event');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Opened cache');
-        // Use addAll with a catch to prevent a single failed resource from failing the entire install
+        console.log('[SW] Caching app shell');
         return cache.addAll(URLS_TO_CACHE).catch(err => {
-            console.error('Failed to cache one or more critical resources during install:', err);
+            console.error('[SW] Caching failed for some resources:', err);
         });
+      })
+      .then(() => {
+        console.log('[SW] Skip waiting');
+        // Force the waiting service worker to become the active service worker.
+        return self.skipWaiting();
       })
   );
 });
 
+// On activation, claim clients and clean up old caches.
+self.addEventListener('activate', event => {
+  console.log('[SW] Activate event');
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    self.clients.claim().then(() => {
+        // This makes the service worker take control of existing clients.
+        console.log('[SW] Clients claimed');
+        return caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cacheName => {
+                    if (cacheWhitelist.indexOf(cacheName) === -1) {
+                        console.log('[SW] Deleting old cache:', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        });
+    })
+  );
+});
+
+// On fetch, intercept requests.
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // CRITICAL FIX: Intercept TS/TSX files and serve them with the correct MIME type.
-  // This is necessary because static hosts like GitHub Pages don't know the correct Content-Type.
+  // For TS/TSX files, fetch from network and fix the MIME type.
   if (url.pathname.endsWith('.ts') || url.pathname.endsWith('.tsx')) {
     event.respondWith(
       fetch(event.request).then(response => {
         if (!response.ok) {
-          // If the file is not found (404), etc., pass the error response through.
+          console.error(`[SW] Fetch failed for ${url.pathname}: ${response.statusText}`);
           return response;
         }
-        // Create a new Response object with the same body but corrected headers.
+        
         const headers = new Headers(response.headers);
         headers.set('Content-Type', 'application/javascript');
+        
+        console.log(`[SW] Serving corrected MIME type for: ${url.pathname}`);
+        
         return new Response(response.body, {
           status: response.status,
           statusText: response.statusText,
           headers: headers
         });
+      }).catch(error => {
+        console.error(`[SW] Network error for ${url.pathname}:`, error);
+        return new Response(`Network error for ${url.pathname}`, {
+          status: 500,
+          statusText: 'Service Worker Fetch Error'
+        });
       })
     );
-    return; // End here for TS/TSX files.
+    return; // End execution here for these files.
   }
 
-  // For all other requests, use a standard cache-then-network strategy.
+  // For all other requests, use a "cache-first" strategy.
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
-      // Return from cache if found.
       if (cachedResponse) {
         return cachedResponse;
       }
-      // Otherwise, fetch from the network.
-      return fetch(event.request).then(networkResponse => {
-        // Don't cache unsuccessful responses or opaque responses
-        if (!networkResponse || networkResponse.status !== 200 || (networkResponse.type !== 'basic' && networkResponse.type !== 'cors')) {
-          return networkResponse;
-        }
-
-        // Clone the response to store it in the cache.
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          if (event.request.method === 'GET') {
-            cache.put(event.request, responseToCache);
-          }
-        });
-        return networkResponse;
-      });
-    })
-  );
-});
-
-
-self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
+      return fetch(event.request);
     })
   );
 });
