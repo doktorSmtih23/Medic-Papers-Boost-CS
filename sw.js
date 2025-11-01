@@ -1,5 +1,5 @@
 // This service worker's sole purpose is to intercept requests for .ts/.tsx files
-// and serve them with the correct JavaScript MIME type.
+// and serve them with the correct JavaScript MIME type, bypassing server misconfigurations.
 
 // On install, activate immediately.
 self.addEventListener('install', event => {
@@ -32,11 +32,14 @@ self.addEventListener('fetch', event => {
           return response;
         }
         
-        // Create new headers and set the correct Content-Type.
+        // Create new headers, set the correct Content-Type, and add aggressive cache-busting headers.
         const headers = new Headers(response.headers);
         headers.set('Content-Type', 'application/javascript; charset=utf-8');
+        headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        headers.set('Pragma', 'no-cache');
+        headers.set('Expires', '0');
         
-        console.log(`[SW] Serving corrected MIME type for: ${url.pathname}`);
+        console.log(`[SW] Serving corrected MIME type (non-cached) for: ${url.pathname}`);
         
         // Return a new response with the corrected headers and original body.
         return new Response(response.body, {
@@ -55,5 +58,4 @@ self.addEventListener('fetch', event => {
     );
   }
   // For all other requests, do nothing and let the browser handle them normally.
-  // The absence of event.respondWith() means we are not intercepting them.
 });
