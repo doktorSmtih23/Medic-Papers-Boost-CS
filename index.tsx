@@ -98,13 +98,6 @@ const deleteArticle = (articleId: string): SavedArticle[] => {
 }
 
 // --- services/geminiService.ts ---
-const API_KEY_GS = process.env.API_KEY;
-if (!API_KEY_GS) {
-  console.warn("API_KEY environment variable not set.");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY_GS });
-
 const responseSchema = {
     type: Type.OBJECT,
     properties: {
@@ -149,6 +142,12 @@ const responseSchema = {
 };
 
 async function generateMedicalAnalysis(pdfText: string): Promise<AnalysisResult> {
+    const API_KEY = process.env.API_KEY;
+    if (!API_KEY) {
+      throw new Error("API Key not found. Please select an API Key to continue.");
+    }
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
+
     const model = 'gemini-2.5-pro';
     const prompt = `
         You are "Medic Papers Boost CS", an expert medical document processing and educational gamification assistant. Your purpose is to transform dense medical documents into three distinct, high-quality outputs: a Summary, an Assessment Quiz, and a set of Flashcards.
@@ -177,6 +176,9 @@ async function generateMedicalAnalysis(pdfText: string): Promise<AnalysisResult>
         }
         return parsedResult as AnalysisResult;
     } catch (error) {
+        if (error instanceof Error && error.message.includes("Requested entity was not found.")) {
+             throw new Error("The selected API Key is no longer valid. Please select a different key.");
+        }
         console.error("Error calling Gemini API:", error);
         throw new Error("Failed to generate analysis from the AI model.");
     }
@@ -184,7 +186,7 @@ async function generateMedicalAnalysis(pdfText: string): Promise<AnalysisResult>
 
 // --- components/LoadingSpinner.tsx ---
 const LoadingSpinner: React.FC = () => (
-  <svg className="animate-spin h-10 w-10 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+  <svg className="animate-spin h-10 w-10 text-blue-600 mx-auto" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24">
     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
   </svg>
@@ -352,18 +354,96 @@ function App() {
   const [appState, setAppState] = useState<AppState>('home');
   const [library, setLibrary] = useState<SavedArticle[]>([]);
   const [isCurrentArticleSaved, setIsCurrentArticleSaved] = useState<boolean>(false);
+  const [apiKeySelected, setApiKeySelected] = useState(false);
+  const [isCheckingApiKey, setIsCheckingApiKey] = useState(true);
+
   useEffect(() => { setLibrary(getLibrary()); }, []);
-  // FIX: Corrected a typo where an undefined variable `page` was used instead of `p`.
+
+  useEffect(() => {
+    const checkApiKey = async () => {
+      setIsCheckingApiKey(true);
+      if (typeof window.aistudio?.hasSelectedApiKey === 'function') {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        setApiKeySelected(hasKey);
+      } else {
+        // Fallback for environments where aistudio is not available
+        setApiKeySelected(false);
+      }
+      setIsCheckingApiKey(false);
+    };
+    checkApiKey();
+  }, []);
+
+  const handleSelectApiKey = async () => {
+    if (typeof window.aistudio?.openSelectKey === 'function') {
+      await window.aistudio.openSelectKey();
+      setApiKeySelected(true);
+    } else {
+        alert("API Key selection is not available in this environment.");
+    }
+  };
+
   const extractTextFromPdf = async (file: File): Promise<string> => { const ab = await file.arrayBuffer(); const pdf = await pdfjsLib.getDocument(ab).promise; let ft = ''; for (let i = 1; i <= pdf.numPages; i++) { const p = await pdf.getPage(i); const tc = await p.getTextContent(); ft += tc.items.map(it => 'str' in it ? it.str : '').join(' ') + '\n\n'; } return ft.replace(/-\s*\n\n\s*/g, '').replace(/[ \t]+/g, ' ').trim(); };
-  const handleFileUpload = useCallback(async (file: File) => { if (!file) return; setIsLoading(true); setError(null); setAnalysisResult(null); setIsCurrentArticleSaved(false); setFileName(file.name); setAppState('analysis'); try { const pdfText = await extractTextFromPdf(file); if (pdfText.trim().length === 0) throw new Error("Could not extract text from PDF."); const result = await generateMedicalAnalysis(pdfText); setAnalysisResult(result); setCurrentView('summary'); } catch (err) { console.error(err); setError(`Failed to process document. ${err instanceof Error ? err.message : 'An unknown error occurred.'}`); } finally { setIsLoading(false); } }, []);
+  
+  const handleFileUpload = useCallback(async (file: File) => {
+    if (!file) return;
+    setIsLoading(true);
+    setError(null);
+    setAnalysisResult(null);
+    setIsCurrentArticleSaved(false);
+    setFileName(file.name);
+    setAppState('analysis');
+    try {
+      const pdfText = await extractTextFromPdf(file);
+      if (pdfText.trim().length === 0) throw new Error("Could not extract text from PDF.");
+      const result = await generateMedicalAnalysis(pdfText);
+      setAnalysisResult(result);
+      setCurrentView('summary');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+      console.error(err);
+      if (errorMessage.includes("API Key not found") || errorMessage.includes("longer valid")) {
+          setError(`${errorMessage} Please re-select your key.`);
+          setApiKeySelected(false);
+          setAppState('home');
+      } else {
+          setError(`Failed to process document. ${errorMessage}`);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
   const handleResetToHome = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setAppState('home'); }
   const handleStartNewAnalysis = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setAppState('analysis'); }
   const handleViewLibrary = () => setAppState('library');
   const handleViewSavedArticle = (article: SavedArticle) => { setAnalysisResult(article.analysisResult); setFileName(article.fileName); setIsCurrentArticleSaved(true); setCurrentView('summary'); setAppState('analysis'); };
   const handleSaveToLibrary = (specialty: string) => { if (analysisResult && fileName) { const updatedLibrary = saveArticle(fileName, specialty, analysisResult); setLibrary(updatedLibrary); setIsCurrentArticleSaved(true); } };
   const handleDeleteArticle = (articleId: string) => { if (window.confirm('Are you sure?')) { setLibrary(deleteArticle(articleId)); } };
+  
   const renderAnalysisView = () => { if (isLoading) { return <div className="text-center p-10"><LoadingSpinner /><p className="mt-4">Analyzing...</p></div>; } if (error) { return <div className="text-center p-10 bg-red-50"><p className="text-red-700 font-semibold">An Error Occurred</p><p className="mt-2 text-red-600">{error}</p><button onClick={handleStartNewAnalysis} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">Try Again</button></div>; } if (analysisResult) { return (<div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg print-reset-layout"><div className="flex justify-between items-center mb-6 border-b pb-4 no-print"><h2 className="text-2xl font-bold truncate pr-4" title={fileName}>{fileName}</h2><button onClick={handleStartNewAnalysis} className="flex-shrink-0 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm">Analyze New</button></div><div className="no-print">{!isCurrentArticleSaved ? (<div className="mb-6"><SaveToLibraryForm onSave={handleSaveToLibrary} /></div>) : (<div className="mb-6 p-4 bg-green-50 rounded-lg flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><p className="text-green-800">This analysis is saved in your library.</p></div>)}</div><div className="border-b border-gray-200 no-print"><nav className="-mb-px flex space-x-8"><button onClick={() => setCurrentView('summary')} className={`${currentView === 'summary' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Summary</button><button onClick={() => setCurrentView('quiz')} className={`${currentView === 'quiz' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Interactive Quiz</button><button onClick={() => setCurrentView('flashcards')} className={`${currentView === 'flashcards' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Flashcards</button></nav></div><div className="mt-6">{currentView === 'summary' && <SummaryView htmlContent={analysisResult.summary} fileName={fileName} />}{currentView === 'quiz' && <QuizView quizData={analysisResult.quiz} fileName={fileName} />}{currentView === 'flashcards' && <FlashcardsView flashcards={analysisResult.flashcards} fileName={fileName} />}</div></div>); } return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />; };
-  const renderContent = () => { switch (appState) { case 'home': return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; case 'library': return <LibraryView library={library} onViewArticle={handleViewSavedArticle} onGoHome={handleResetToHome} onDeleteArticle={handleDeleteArticle} />; case 'analysis': if (!analysisResult && !isLoading && !error) { return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />; } return renderAnalysisView(); default: return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; } };
+  
+  const renderContent = () => {
+    if (isCheckingApiKey) {
+        return <div className="text-center p-10"><LoadingSpinner /><p className="mt-4">Checking API Key...</p></div>;
+    }
+
+    if (!apiKeySelected) {
+        return (
+            <div className="max-w-xl mx-auto text-center p-8 bg-white rounded-lg shadow-md mt-10">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">API Key Required</h2>
+                <p className="text-gray-600 mb-6">To use this application, you need to select a Google AI Studio API key. Your key is used only for this session and is not stored.</p>
+                <button onClick={handleSelectApiKey} className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
+                    Select API Key
+                </button>
+                <p className="text-xs text-gray-500 mt-4">
+                    For information on billing, please visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ai.google.dev/gemini-api/docs/billing</a>.
+                </p>
+            </div>
+        );
+    }
+      
+    switch (appState) { case 'home': return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; case 'library': return <LibraryView library={library} onViewArticle={handleViewSavedArticle} onGoHome={handleResetToHome} onDeleteArticle={handleDeleteArticle} />; case 'analysis': if (!analysisResult && !isLoading && !error) { return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />; } return renderAnalysisView(); default: return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; } };
   return (<div className="min-h-screen bg-gray-100"><div className="no-print"><Header onViewLibrary={handleViewLibrary} /></div><main><div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 print-reset-layout"><div className="px-4 py-6 sm:px-0 print-reset-layout">{renderContent()}</div></div></main></div>);
 }
 
