@@ -1,15 +1,15 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Home } from './components/Home';
-import { FileUpload } from './components/FileUpload';
-import { SummaryView } from './components/SummaryView';
-import { QuizView } from './components/QuizView';
-import { FlashcardsView } from './components/FlashcardsView';
-import { LoadingSpinner } from './components/LoadingSpinner';
-import { LibraryView } from './components/LibraryView';
-import { generateMedicalAnalysis } from './services/geminiService';
-import { getLibrary, saveArticle, deleteArticle } from './services/libraryService';
-import type { AnalysisResult, SavedArticle } from './types';
+import { Home } from './components/Home.tsx';
+import { FileUpload } from './components/FileUpload.tsx';
+import { SummaryView } from './components/SummaryView.tsx';
+import { QuizView } from './components/QuizView.tsx';
+import { FlashcardsView } from './components/FlashcardsView.tsx';
+import { LoadingSpinner } from './components/LoadingSpinner.tsx';
+import { LibraryView } from './components/LibraryView.tsx';
+import { generateMedicalAnalysis } from './services/geminiService.ts';
+import { getLibrary, saveArticle, deleteArticle } from './services/libraryService.ts';
+import type { AnalysisResult, SavedArticle } from './types.ts';
 
 // PDF.js worker setup
 import * as pdfjsLib from 'pdfjs-dist';
@@ -18,7 +18,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLi
 type View = 'summary' | 'quiz' | 'flashcards';
 type AppState = 'home' | 'analysis' | 'library';
 
-const Header: React.FC<{ onViewLibrary: () => void; pwaStatus: string }> = ({ onViewLibrary, pwaStatus }) => (
+const Header: React.FC<{ onViewLibrary: () => void }> = ({ onViewLibrary }) => (
   <header className="bg-white shadow-sm">
     <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -27,15 +27,14 @@ const Header: React.FC<{ onViewLibrary: () => void; pwaStatus: string }> = ({ on
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Medic Papers Boost CS</h1>
+            <h1 className="text-2xl font-bold text-gray-900">MedicoBoost AI</h1>
         </div>
         <div className="flex items-center gap-4">
-            <span className="text-xs text-gray-500 font-mono hidden sm:block" title="Progressive Web App Status">{pwaStatus}</span>
             <button
                 onClick={onViewLibrary}
                 className="px-4 py-2 bg-blue-100 text-blue-700 font-semibold rounded-lg hover:bg-blue-200 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-                My Library
+                Mi Biblioteca
             </button>
         </div>
     </div>
@@ -43,7 +42,7 @@ const Header: React.FC<{ onViewLibrary: () => void; pwaStatus: string }> = ({ on
 );
 
 const PRESET_SPECIALTIES = [
-    "Medicina Interna", "Cardiologia", "Pediatria", "Ginecologia", "Cirugia General"
+    "Medicina Interna", "Cardiología", "Pediatría", "Ginecología", "Cirugía General"
 ];
 
 const SaveToLibraryForm: React.FC<{ onSave: (specialty: string) => void }> = ({ onSave }) => {
@@ -55,14 +54,14 @@ const SaveToLibraryForm: React.FC<{ onSave: (specialty: string) => void }> = ({ 
         if (specialtyToSave) {
             onSave(specialtyToSave);
         } else {
-            alert('Please enter a custom specialty name.');
+            alert('Por favor, introduce un nombre para la especialidad personalizada.');
         }
     };
 
     return (
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h3 className="font-semibold text-gray-800">Save to Library</h3>
-            <p className="text-sm text-gray-600 mb-3">Organize this analysis by assigning it to a specialty.</p>
+            <h3 className="font-semibold text-gray-800">Guardar en la Biblioteca</h3>
+            <p className="text-sm text-gray-600 mb-3">Organiza este análisis asignándolo a una especialidad.</p>
             <div className="flex flex-col sm:flex-row gap-2 items-center">
                 <select 
                     value={selectedSpecialty} 
@@ -70,14 +69,14 @@ const SaveToLibraryForm: React.FC<{ onSave: (specialty: string) => void }> = ({ 
                     className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                     {PRESET_SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
-                    <option value="Other">Create New...</option>
+                    <option value="Other">Crear Nueva...</option>
                 </select>
                 {selectedSpecialty === 'Other' && (
                     <input
                         type="text"
                         value={customSpecialty}
                         onChange={(e) => setCustomSpecialty(e.target.value)}
-                        placeholder="New specialty name"
+                        placeholder="Nombre de la nueva especialidad"
                         className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                 )}
@@ -85,7 +84,7 @@ const SaveToLibraryForm: React.FC<{ onSave: (specialty: string) => void }> = ({ 
                     onClick={handleSave}
                     className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
                 >
-                    Save
+                    Guardar
                 </button>
             </div>
         </div>
@@ -101,27 +100,9 @@ export default function App() {
   const [appState, setAppState] = useState<AppState>('home');
   const [library, setLibrary] = useState<SavedArticle[]>([]);
   const [isCurrentArticleSaved, setIsCurrentArticleSaved] = useState<boolean>(false);
-  const [pwaStatus, setPwaStatus] = useState<string>('PWA: Checking...');
 
   useEffect(() => {
     setLibrary(getLibrary());
-
-    // Register the service worker for PWA capabilities
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(registration => {
-          console.log('SW registered: ', registration);
-          setPwaStatus('✅ Ready to be installed');
-        }).catch(registrationError => {
-          console.log('SW registration failed (expected in this environment): ', registrationError);
-          // This environment may block service workers. We'll show a success-like message
-          // to confirm the code is in place, and explain it's installable on a live server.
-          setPwaStatus('✅ PWA configured (Install from live site)');
-        });
-      });
-    } else {
-        setPwaStatus('❌ PWA not supported');
-    }
   }, []);
 
   const extractTextFromPdf = async (file: File): Promise<string> => {
@@ -153,7 +134,7 @@ export default function App() {
     try {
       const pdfText = await extractTextFromPdf(file);
       if (pdfText.trim().length === 0) {
-        throw new Error("Could not extract text from the PDF. The document might be image-based or empty.");
+        throw new Error("No se pudo extraer texto del PDF. El documento podría estar basado en imágenes o estar vacío.");
       }
       
       const result = await generateMedicalAnalysis(pdfText);
@@ -162,8 +143,8 @@ export default function App() {
 
     } catch (err) {
       console.error(err);
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-      setError(`Failed to process the document. ${errorMessage}`);
+      const errorMessage = err instanceof Error ? err.message : 'Ocurrió un error desconocido.';
+      setError(`Fallo al procesar el documento. ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -206,7 +187,7 @@ export default function App() {
   };
   
   const handleDeleteArticle = (articleId: string) => {
-    if (window.confirm('Are you sure you want to delete this analysis from your library?')) {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este análisis de tu biblioteca?')) {
       const updatedLibrary = deleteArticle(articleId);
       setLibrary(updatedLibrary);
     }
@@ -218,8 +199,8 @@ export default function App() {
       return (
         <div className="text-center p-10">
           <LoadingSpinner />
-          <p className="mt-4 text-lg font-medium text-gray-600">Analyzing your document...</p>
-          <p className="text-sm text-gray-500">This may take a moment.</p>
+          <p className="mt-4 text-lg font-medium text-gray-600">Analizando tu documento...</p>
+          <p className="text-sm text-gray-500">Esto puede tardar un momento.</p>
         </div>
       );
     }
@@ -227,13 +208,13 @@ export default function App() {
     if (error) {
       return (
         <div className="text-center p-10 bg-red-50 border-l-4 border-red-400">
-          <p className="text-red-700 font-semibold">An Error Occurred</p>
+          <p className="text-red-700 font-semibold">Ocurrió un Error</p>
           <p className="mt-2 text-red-600">{error}</p>
           <button
             onClick={handleStartNewAnalysis}
             className="mt-4 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
           >
-            Try Again
+            Intentar de Nuevo
           </button>
         </div>
       );
@@ -248,7 +229,7 @@ export default function App() {
                   onClick={handleStartNewAnalysis}
                   className="flex-shrink-0 px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                  Analyze New Document
+                  Analizar Nuevo Documento
               </button>
           </div>
 
@@ -262,7 +243,7 @@ export default function App() {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <p className="text-green-800 font-medium">This analysis is saved in your library.</p>
+                  <p className="text-green-800 font-medium">Este análisis está guardado en tu biblioteca.</p>
               </div>
             )}
           </div>
@@ -273,19 +254,19 @@ export default function App() {
                 onClick={() => setCurrentView('summary')}
                 className={`${currentView === 'summary' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
               >
-                Summary
+                Resumen
               </button>
               <button
                 onClick={() => setCurrentView('quiz')}
                 className={`${currentView === 'quiz' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
               >
-                Interactive Quiz
+                Quiz Interactivo
               </button>
               <button
                 onClick={() => setCurrentView('flashcards')}
                 className={`${currentView === 'flashcards' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
               >
-                Flashcards
+                Tarjetas de Estudio
               </button>
             </nav>
           </div>
@@ -321,7 +302,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="no-print">
-        <Header onViewLibrary={handleViewLibrary} pwaStatus={pwaStatus} />
+        <Header onViewLibrary={handleViewLibrary} />
       </div>
       <main>
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 print-reset-layout">

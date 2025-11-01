@@ -1,0 +1,5 @@
+{
+  "name": "MedicoBoost AI",
+  "description": "Un asistente con IA para transformar documentos médicos densos en resúmenes visuales interactivos y quizzes educativos. Sube un PDF médico para empezar.",
+  "requestFramePermissions": []
+}

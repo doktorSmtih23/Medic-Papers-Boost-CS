@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
-    <meta charset="UTF-M" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Medic Papers Boost CS</title>
-    <link rel="manifest" href="/manifest.json" />
+    <title>MedicoBoost AI</title>
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3e%3cpath d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' /%3e%3c/svg%3e">
     <meta name="theme-color" content="#2563eb" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.min.mjs" type="module"></script>
+    <!-- Babel for in-browser TSX transformation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
       body {
@@ -66,20 +67,30 @@
 {
   "imports": {
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "pdfjs-dist": "https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.min.mjs",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "pdfjs-dist": "https://aistudiocdn.com/pdfjs-dist@^5.4.296",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.0",
-    "vite": "https://aistudiocdn.com/vite@^7.1.12",
-    "path": "https://aistudiocdn.com/path@^0.12.7"
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body class="bg-gray-50">
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+
+    <!-- 1. Register the Service Worker -->
+    <script src="./register-sw.js"></script>
+
+    <!-- 
+      2. This script tag tells Babel to fetch index.tsx, transform it from TSX to JS,
+      and then execute it as an ES module. Babel will automatically handle
+      any `import` statements within index.tsx (and its dependencies),
+      transforming them as needed. The Service Worker ensures that when Babel
+      fetches these .tsx files, the browser doesn't reject them due to the
+      incorrect MIME type from the server. This is the definitive fix.
+    -->
+    <script type="text/babel" data-type="module" src="./index.tsx"></script>
+    
   </body>
 </html>

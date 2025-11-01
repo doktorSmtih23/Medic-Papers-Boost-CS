@@ -1,5 +1,5 @@
 {
-  "name": "medic-papers-boost-cs",
+  "name": "medicoboost-ai",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,8 +11,8 @@
   "dependencies": {
     "@google/genai": "^1.28.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "pdfjs-dist": "^5.4.296"
+    "pdfjs-dist": "4.4.168",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
