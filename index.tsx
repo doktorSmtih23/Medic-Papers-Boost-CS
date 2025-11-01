@@ -269,6 +269,11 @@ const QuizView: React.FC<{ quizData: Quiz; fileName: string; }> = ({ quizData, f
   const maxQuestions = Math.min(20, maxQuestionsAvailable);
   useEffect(() => { try { const s = localStorage.getItem(LOCAL_STORAGE_KEY); if (s) { const saved: SavedQuizState = JSON.parse(s); if (saved.quizTitle === quizData.quizTitle) setSavedProgress(saved); else localStorage.removeItem(LOCAL_STORAGE_KEY); } } catch (e) { console.error("Failed to load quiz progress:", e); localStorage.removeItem(LOCAL_STORAGE_KEY); } }, [quizData.quizTitle]);
   useEffect(() => { if (maxQuestionsAvailable === 0) { if (numQuestions !== 0) setNumQuestions(0); return; } let clampedNum = numQuestions; if (clampedNum > maxQuestions) clampedNum = maxQuestions; if (clampedNum < minQuestions) clampedNum = minQuestions; if (clampedNum !== numQuestions) setNumQuestions(clampedNum); }, [maxQuestions, minQuestions, maxQuestionsAvailable, numQuestions]);
+  
+  const handleTopicToggle = (topic: string) => { setSelectedTopics(prev => prev.includes(topic) ? prev.filter(t => t !== topic) : [...prev, topic] ); };
+  const handleSelectAllTopics = () => { setSelectedTopics(allTopics); };
+  const handleDeselectAllTopics = () => { setSelectedTopics([]); };
+
   const handleStartNewQuiz = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); const shuffled = [...filteredQuestions]; for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; } setActiveQuestions(shuffled.slice(0, numQuestions)); setCurrentQuestionIndex(0); setScore(0); setSelectedAnswerIndex(null); setIsAnswered(false); setShowExplanation(false); setQuizFinished(false); setUserAnswers(Array(numQuestions).fill(null)); setQuizStarted(true); setSavedProgress(null); };
   const handleResumeQuiz = () => { if (!savedProgress) return; setActiveQuestions(savedProgress.activeQuestions); setCurrentQuestionIndex(savedProgress.currentQuestionIndex); setScore(savedProgress.score); setUserAnswers(savedProgress.userAnswers); setNumQuestions(savedProgress.numQuestions); const lastAnswer = savedProgress.userAnswers[savedProgress.currentQuestionIndex]; if (lastAnswer !== null && typeof lastAnswer !== 'undefined') { setSelectedAnswerIndex(lastAnswer); setIsAnswered(true); setShowExplanation(true); } setQuizStarted(true); setSavedProgress(null); };
   const currentQuestion = activeQuestions[currentQuestionIndex];
@@ -278,7 +283,65 @@ const QuizView: React.FC<{ quizData: Quiz; fileName: string; }> = ({ quizData, f
   const handleExportToDoc = () => { if (!activeQuestions.length) return; let docContent = `Quiz: ${quizData.quizTitle}\n\n----------------------------------------\n\n`; activeQuestions.forEach((q, index) => { docContent += `${index + 1}. ${q.questionText}\n`; q.options.forEach((opt, i) => { docContent += `   ${String.fromCharCode(97 + i)}. ${opt}\n`; }); docContent += `\nCorrect Answer: ${q.options[q.correctAnswerIndex]}\nExplanation: ${q.explanation}\n----------------------------------------\n\n`; }); const sanitizedFileName = fileName.replace(/\.pdf$/i, '').replace(/[^a-z0-9]/gi, '_'); const exportFileName = `${sanitizedFileName} - Quiz.doc`; const bom = '\uFEFF'; const dataBlob = new Blob([bom + docContent], { type: 'application/msword;charset=utf-8' }); const url = window.URL.createObjectURL(dataBlob); const link = document.createElement('a'); link.href = url; link.download = exportFileName; document.body.appendChild(link); link.click(); document.body.removeChild(link); window.URL.revokeObjectURL(url); };
   const getOptionClass = (index: number) => { if (!isAnswered) return "bg-white hover:bg-blue-50 border-gray-300 hover:border-blue-400 text-gray-900 transform hover:-translate-y-1 active:scale-[0.99]"; const isCorrect = index === currentQuestion.correctAnswerIndex; const isSelected = index === selectedAnswerIndex; if (isCorrect) return "bg-green-100 border-green-500 text-green-900 font-semibold transform scale-105 shadow-lg"; if (isSelected && !isCorrect) return "bg-red-100 border-red-500 text-red-900 font-semibold transform scale-105 shadow-lg"; return "bg-gray-50 border-gray-200 text-gray-500 opacity-60"; };
   const progressPercentage = useMemo(() => (activeQuestions.length === 0 ? 0 : ((currentQuestionIndex + 1) / activeQuestions.length) * 100), [currentQuestionIndex, activeQuestions.length]);
-  if (!quizStarted) { /* UI for quiz setup */ return ( <div className="max-w-4xl mx-auto text-center p-8 bg-gray-50 rounded-lg shadow-md"><h2 className="text-2xl font-bold text-gray-800 mb-2">{quizData.quizTitle}</h2>{savedProgress ? (<div className="my-8 p-6 bg-blue-50 border border-blue-200 rounded-lg"><h3 className="text-xl font-semibold text-blue-800">Welcome Back!</h3><p className="text-blue-700 mt-2">You have a quiz in progress with {savedProgress.numQuestions} questions. You were on question {savedProgress.currentQuestionIndex + 1}.</p><div className="mt-6 flex flex-col sm:flex-row justify-center items-center gap-4"><button onClick={handleResumeQuiz} className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Resume Quiz</button><button onClick={handleStartNewQuiz} className="w-full sm:w-auto px-8 py-3 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700">Start New Quiz</button></div></div>) : (<><p className="text-gray-600 mb-8">Ready to test your knowledge? Customize your quiz below.</p>{/* Topic Filtering and Question Count UI */}</>)}</div>); }
+  
+  if (!quizStarted) {
+    return (
+      <div className="max-w-4xl mx-auto text-center p-8 bg-gray-50 rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">{quizData.quizTitle}</h2>
+        
+        {savedProgress ? (
+            <div className="my-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="text-xl font-semibold text-blue-800">Welcome Back!</h3>
+                <p className="text-blue-700 mt-2">
+                    You have a quiz in progress with {savedProgress.numQuestions} questions. You were on question {savedProgress.currentQuestionIndex + 1}.
+                </p>
+                <div className="mt-6 flex flex-col sm:flex-row justify-center items-center gap-4">
+                    <button onClick={handleResumeQuiz} className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-105 transition-transform">Resume Quiz</button>
+                    <button onClick={handleStartNewQuiz} className="w-full sm:w-auto px-8 py-3 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Start New Quiz</button>
+                </div>
+            </div>
+        ) : (
+          <>
+            <p className="text-gray-600 mb-8">Ready to test your knowledge? Customize your quiz below.</p>
+
+            <div className="max-w-xl mx-auto my-8 text-left">
+              <h3 className="text-lg font-medium text-gray-700 mb-3">Filter by Topic</h3>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {allTopics.map(topic => (
+                  <button key={topic} onClick={() => handleTopicToggle(topic)} className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${selectedTopics.includes(topic) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+                    {topic}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-4">
+                  <button onClick={handleSelectAllTopics} className="text-sm text-blue-600 hover:underline">Select All</button>
+                  <button onClick={handleDeselectAllTopics} className="text-sm text-blue-600 hover:underline">Deselect All</button>
+              </div>
+            </div>
+
+            <div className="max-w-md mx-auto">
+              <label htmlFor="numQuestions" className="block text-lg font-medium text-gray-700">Number of Questions ({maxQuestionsAvailable} available)</label>
+              <div className="flex items-center justify-center space-x-4 my-4">
+                <span className="text-sm font-medium text-gray-500">{minQuestions > 0 ? minQuestions : 0}</span>
+                <input id="numQuestions" type="range" min={minQuestions > 0 ? minQuestions : 0} max={maxQuestions > 0 ? maxQuestions : 0} value={numQuestions} onChange={(e) => setNumQuestions(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed" disabled={maxQuestionsAvailable < minQuestions || maxQuestionsAvailable === 0}/>
+                <span className="text-sm font-medium text-gray-500">{maxQuestions > 0 ? maxQuestions : 0}</span>
+              </div>
+              <div className="font-bold text-blue-600 text-4xl my-4">{numQuestions}</div>
+            </div>
+
+            {maxQuestionsAvailable < minQuestions ? (
+                <p className="text-red-600 mt-4">{selectedTopics.length > 0 ? `Not enough questions found for the selected topics (minimum ${minQuestions} required).` : 'Please select at least one topic to start the quiz.'}</p>
+            ) : (
+              <div className="mt-8">
+                <button onClick={handleStartNewQuiz} disabled={selectedTopics.length === 0 || numQuestions === 0} className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-105 transition-transform disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none">Start Quiz</button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+  
   if (quizFinished) { const correctAnswers = userAnswers.filter((answer, index) => answer === activeQuestions[index].correctAnswerIndex).length; const percentageScore = Math.round((correctAnswers / activeQuestions.length) * 100); const passed = percentageScore >= 90; const incorrectQuestions = activeQuestions.filter((q, index) => userAnswers[index] !== null && userAnswers[index] !== q.correctAnswerIndex); const topicsToReview = [...new Set(incorrectQuestions.map(q => q.topic))]; return ( <div className="text-center p-8 bg-white rounded-lg shadow-md"><h2 className="text-3xl font-bold text-gray-800">Quiz Completed!</h2><div className={`mt-6 p-6 rounded-lg ${passed ? 'bg-green-50' : 'bg-red-50'}`}><p className="text-lg">Your final score</p><p className={`mt-2 text-6xl font-bold ${passed ? 'text-green-600' : 'text-red-600'}`}>{percentageScore}%</p><p>({correctAnswers} out of {activeQuestions.length} correct)</p>{passed ? <p className="mt-4 font-semibold text-green-700">Congratulations!</p> : <p className="mt-4 font-semibold text-red-700">Review the topics below.</p>}</div>{!passed && topicsToReview.length > 0 && (<div className="mt-8 text-left p-6 bg-yellow-50 border-l-4 border-yellow-400"><h3 className="text-xl font-bold">Areas for Review</h3><ul className="list-disc list-inside mt-4">{topicsToReview.map((topic, index) => <li key={index}>{topic}</li>)}</ul></div>)}<div className="mt-10 flex gap-4 justify-center"><button onClick={handleRestartQuiz} className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg">Start New Quiz</button><button onClick={handleExportToDoc} className="inline-flex items-center px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg"><DownloadIconQV />Export for Forms (.doc)</button></div></div>); }
   return ( <div className="max-w-4xl mx-auto"><div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold">{quizData.quizTitle}</h2><p className="text-lg font-semibold text-blue-600">Score: {score}</p></div><div className="w-full bg-gray-200 rounded-full h-2.5 mb-4"><div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div></div><p className="text-sm text-gray-500 text-right mb-4">Question {currentQuestionIndex + 1} of {activeQuestions.length}</p><div className="bg-white p-6 rounded-lg shadow"><p className="text-lg font-semibold mb-4">{currentQuestion.questionText}</p><div className="space-y-3">{currentQuestion.options.map((option, index) => (<button key={index} onClick={() => handleAnswerSelect(index)} disabled={isAnswered} className={`w-full text-left p-4 border rounded-lg flex items-center justify-between transition-all duration-300 ${getOptionClass(index)}`}><span>{option}</span>{isAnswered && (<span className={`flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center ${index === currentQuestion.correctAnswerIndex ? 'bg-green-500' : 'bg-red-500'}`}>{index === currentQuestion.correctAnswerIndex ? <CheckIcon /> : <XIcon />}</span>)}</button>))}</div>{showExplanation && (<div className="mt-6 p-4 bg-yellow-50 border-l-4 border-yellow-400"><h4 className="font-bold">Explanation</h4><p>{currentQuestion.explanation}</p><div className="mt-6 text-right"><button onClick={handleNextQuestion} className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg">{currentQuestionIndex < activeQuestions.length - 1 ? 'Next Question' : 'Finish Quiz'}</button></div></div>)}</div></div>);
 };
@@ -299,19 +362,75 @@ const FlashcardsView: React.FC<{ flashcards: Flashcard[]; fileName: string; }> =
   const maxFlashcardsAvailable = filteredFlashcards.length;
   const minFlashcards = Math.min(5, maxFlashcardsAvailable);
   const maxFlashcards = Math.max(minFlashcards, maxFlashcardsAvailable);
+  
   useEffect(() => { if (maxFlashcardsAvailable === 0) { if (numFlashcards !== 0) setNumFlashcards(0); return; } let clampedNum = numFlashcards; if (clampedNum > maxFlashcards) clampedNum = maxFlashcards; if (clampedNum < minFlashcards) clampedNum = minFlashcards; if (clampedNum !== numFlashcards) setNumFlashcards(clampedNum); }, [maxFlashcards, minFlashcards, maxFlashcardsAvailable, numFlashcards]);
+  
+  const handleTopicToggle = (topic: string) => { setSelectedTopics(prev => prev.includes(topic) ? prev.filter(t => t !== topic) : [...prev, topic]); };
+  const handleSelectAllTopics = () => setSelectedTopics(allTopics);
+  const handleDeselectAllTopics = () => setSelectedTopics([]);
+
   const handleStartDeck = () => { const shuffled = [...filteredFlashcards].sort(() => 0.5 - Math.random()); setActiveFlashcards(shuffled.slice(0, numFlashcards)); setCurrentIndex(0); setIsFlipped(false); setDeckStarted(true); };
   useEffect(() => { setIsFlipped(false); }, [currentIndex]);
   const handleNext = useCallback(() => { if (currentIndex < activeFlashcards.length - 1) setCurrentIndex(currentIndex + 1); }, [currentIndex, activeFlashcards.length]);
   const handlePrev = useCallback(() => { if (currentIndex > 0) setCurrentIndex(currentIndex - 1); }, [currentIndex]);
   useEffect(() => { const handleKeyDown = (event: KeyboardEvent) => { if (!deckStarted) return; if (event.key === 'ArrowLeft') handlePrev(); else if (event.key === 'ArrowRight') handleNext(); else if (event.key === ' ') { event.preventDefault(); setIsFlipped(f => !f); } }; window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown); }, [handlePrev, handleNext, deckStarted]);
   const handleExportCsv = () => { if (filteredFlashcards.length === 0) { alert("No flashcards to export."); return; } const escape = (f: string) => (/[",\n]/.test(f) ? `"${f.replace(/"/g, '""')}"` : f); const h = ['Term', 'Definition', 'Topic']; const r = filteredFlashcards.map(c => [escape(c.term), escape(c.definition), escape(c.topic)]); let csv = h.join(',') + '\n'; r.forEach(row => { csv += row.join(',') + '\n'; }); const b = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const u = URL.createObjectURL(b); const l = document.createElement("a"); l.setAttribute("href", u); const s = fileName.replace(/\.pdf$/i, '').replace(/[^a-z0-9]/gi, '_'); l.setAttribute("download", `${s} - Flashcards.csv`); document.body.appendChild(l); l.click(); document.body.removeChild(l); };
-  if (!deckStarted) { return ( <div className="max-w-4xl mx-auto text-center p-8 bg-gray-50 rounded-lg shadow-md"><h2 className="text-2xl font-bold">Flashcard Deck Setup</h2>{/* UI for flashcard setup */}<div className="mt-8 flex gap-4 justify-center"><button onClick={handleStartDeck} disabled={selectedTopics.length === 0 || numFlashcards === 0} className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg">Start Studying</button><button onClick={handleExportCsv} className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md"><DownloadIconFV />Export Filtered to CSV</button></div></div>); }
+  
+  const handleRestart = () => setDeckStarted(false);
+
+  if (!deckStarted) {
+    return (
+        <div className="max-w-4xl mx-auto text-center p-8 bg-gray-50 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Flashcard Deck Setup</h2>
+            <p className="text-gray-600 mb-8">Customize your study session.</p>
+
+            <div className="max-w-xl mx-auto my-8 text-left">
+              <h3 className="text-lg font-medium text-gray-700 mb-3">Filter by Topic</h3>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {allTopics.map(topic => (
+                  <button key={topic} onClick={() => handleTopicToggle(topic)} className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${selectedTopics.includes(topic) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+                    {topic}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-4">
+                  <button onClick={handleSelectAllTopics} className="text-sm text-blue-600 hover:underline">Select All</button>
+                  <button onClick={handleDeselectAllTopics} className="text-sm text-blue-600 hover:underline">Deselect All</button>
+              </div>
+            </div>
+
+            <div className="max-w-md mx-auto">
+              <label htmlFor="numFlashcards" className="block text-lg font-medium text-gray-700">Number of Flashcards ({maxFlashcardsAvailable} available)</label>
+              <div className="flex items-center justify-center space-x-4 my-4">
+                <span className="text-sm font-medium text-gray-500">{minFlashcards > 0 ? minFlashcards : 0}</span>
+                <input id="numFlashcards" type="range" min={minFlashcards > 0 ? minFlashcards : 0} max={maxFlashcards > 0 ? maxFlashcards : 0} value={numFlashcards} onChange={(e) => setNumFlashcards(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed" disabled={maxFlashcardsAvailable < minFlashcards || maxFlashcardsAvailable === 0} />
+                <span className="text-sm font-medium text-gray-500">{maxFlashcards > 0 ? maxFlashcards : 0}</span>
+              </div>
+              <div className="font-bold text-blue-600 text-4xl my-4">{numFlashcards}</div>
+            </div>
+
+            {maxFlashcardsAvailable < minFlashcards ? (
+                <p className="text-red-600 mt-4">{selectedTopics.length > 0 ? `Not enough flashcards found for the selected topics (minimum ${minFlashcards} required).` : 'Please select at least one topic to start.'}</p>
+            ) : (
+              <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+                <button onClick={handleStartDeck} disabled={selectedTopics.length === 0 || numFlashcards === 0} className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-105 transition-transform disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none">Start Studying</button>
+                <button onClick={handleExportCsv} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"><DownloadIconFV />Export Filtered to CSV</button>
+              </div>
+            )}
+        </div>
+    );
+  }
+
   const currentCard = activeFlashcards[currentIndex];
   return (
     <div className="max-w-2xl mx-auto flex flex-col items-center">
       <style>{`.perspective{perspective:1500px}.card{transform-style:preserve-3d;transition:transform .6s;cursor:pointer}.card.is-flipped{transform:rotateY(180deg)}.card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;padding:1.5rem;text-align:center;border-radius:.75rem}.card-face-front{background:#fff;border:1px solid #e5e7eb}.card-face-back{transform:rotateY(180deg);background:#f0f9ff;border:1px solid #bae6fd}`}</style>
-      {activeFlashcards.length > 0 ? (<><div className="w-full h-72 md:h-80 perspective"><div className={`relative w-full h-full card ${isFlipped ? 'is-flipped' : ''}`} onClick={() => setIsFlipped(!isFlipped)}><div className="card-face card-face-front"><h3 className="text-2xl font-bold">{currentCard.term}</h3></div><div className="card-face card-face-back"><p className="text-lg">{currentCard.definition}</p></div></div></div><p className="text-sm text-gray-500 mt-4">Click card to flip (or press spacebar)</p><div className="flex items-center justify-between w-full mt-6"><button onClick={handlePrev} disabled={currentIndex === 0} className="p-3 rounded-full bg-gray-200 disabled:opacity-50"><ArrowLeftIcon /></button><p>{currentIndex + 1} / {activeFlashcards.length}</p><button onClick={handleNext} disabled={currentIndex === activeFlashcards.length - 1} className="p-3 rounded-full bg-gray-200 disabled:opacity-50"><ArrowRightIcon /></button></div><div className="mt-8 pt-6 border-t w-full flex justify-center"><button onClick={() => setDeckStarted(false)} className="px-4 py-2 bg-blue-600 text-white rounded-md">Change Settings</button></div></>) : (<div className="text-center p-8"><p>No flashcards available for the selected topics.</p><button onClick={() => setDeckStarted(false)} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md">Change Settings</button></div>)}
+      {activeFlashcards.length > 0 ? (<><div className="w-full h-72 md:h-80 perspective"><div className={`relative w-full h-full card ${isFlipped ? 'is-flipped' : ''}`} onClick={() => setIsFlipped(!isFlipped)}><div className="card-face card-face-front"><h3 className="text-2xl font-bold">{currentCard.term}</h3></div><div className="card-face card-face-back"><p className="text-lg">{currentCard.definition}</p></div></div></div><p className="text-sm text-gray-500 mt-4">Click card to flip (or press spacebar)</p><div className="flex items-center justify-between w-full mt-6"><button onClick={handlePrev} disabled={currentIndex === 0} className="p-3 rounded-full bg-gray-200 disabled:opacity-50"><ArrowLeftIcon /></button><p>{currentIndex + 1} / {activeFlashcards.length}</p><button onClick={handleNext} disabled={currentIndex === activeFlashcards.length - 1} className="p-3 rounded-full bg-gray-200 disabled:opacity-50"><ArrowRightIcon /></button></div>
+      <div className="mt-8 pt-6 border-t w-full flex justify-center items-center gap-4">
+        <button onClick={handleRestart} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md">Change Settings</button>
+        <button onClick={handleExportCsv} className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md"><DownloadIconFV />Export Filtered to CSV</button>
+      </div>
+      </>) : (<div className="text-center p-8"><p>No flashcards available for the selected topics.</p><button onClick={() => setDeckStarted(false)} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md">Change Settings</button></div>)}
     </div>
   );
 };
