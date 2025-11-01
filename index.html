@@ -77,8 +77,7 @@
 </head>
   <body class="bg-gray-50">
     <div id="root"></div>
-    <script src="./register-sw.js"></script>
-    <!-- The main app script is defined here but is loaded, transformed, and injected by register-sw.js -->
-    <script id="main-app-script" data-src="./index.tsx"></script>
+    <!-- The main app script is now a single file that Babel will transform. -->
+    <script type="text/babel" data-type="module" src="./index.tsx"></script>
   </body>
 </html>
