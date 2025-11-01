@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Quiz, Question } from '../types';
 
@@ -230,8 +231,8 @@ export const QuizView: React.FC<QuizViewProps> = ({ quizData, fileName }) => {
         q.options.forEach((opt, i) => {
             docContent += `   ${String.fromCharCode(97 + i)}. ${opt}\n`;
         });
-        docContent += `\nCorrect Answer: ${q.options[q.correctAnswerIndex]}\n`;
-        docContent += `Explanation: ${q.explanation}\n`;
+        docContent += `\nRespuesta Correcta: ${q.options[q.correctAnswerIndex]}\n`;
+        docContent += `Explicación: ${q.explanation}\n`;
         docContent += '----------------------------------------\n\n';
     });
 
@@ -291,31 +292,31 @@ export const QuizView: React.FC<QuizViewProps> = ({ quizData, fileName }) => {
         
         {savedProgress ? (
             <div className="my-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
-                <h3 className="text-xl font-semibold text-blue-800">Welcome Back!</h3>
+                <h3 className="text-xl font-semibold text-blue-800">¡Bienvenido de nuevo!</h3>
                 <p className="text-blue-700 mt-2">
-                    You have a quiz in progress with {savedProgress.numQuestions} questions. You were on question {savedProgress.currentQuestionIndex + 1}.
+                    Tienes un quiz en progreso con {savedProgress.numQuestions} preguntas. Estabas en la pregunta {savedProgress.currentQuestionIndex + 1}.
                 </p>
                 <div className="mt-6 flex flex-col sm:flex-row justify-center items-center gap-4">
                     <button
                         onClick={handleResumeQuiz}
                         className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-105 transition-transform"
                     >
-                        Resume Quiz
+                        Reanudar Quiz
                     </button>
                     <button
                         onClick={handleStartNewQuiz}
                         className="w-full sm:w-auto px-8 py-3 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                     >
-                        Start New Quiz
+                        Empezar Nuevo Quiz
                     </button>
                 </div>
             </div>
         ) : (
           <>
-            <p className="text-gray-600 mb-8">Ready to test your knowledge? Customize your quiz below.</p>
+            <p className="text-gray-600 mb-8">¿Listo para poner a prueba tus conocimientos? Personaliza tu quiz a continuación.</p>
 
             <div className="max-w-xl mx-auto my-8 text-left">
-              <h3 className="text-lg font-medium text-gray-700 mb-3">Filter by Topic</h3>
+              <h3 className="text-lg font-medium text-gray-700 mb-3">Filtrar por Tema</h3>
               <div className="flex flex-wrap gap-2 mb-4">
                 {allTopics.map(topic => (
                   <button
@@ -332,14 +333,14 @@ export const QuizView: React.FC<QuizViewProps> = ({ quizData, fileName }) => {
                 ))}
               </div>
               <div className="flex gap-4">
-                  <button onClick={handleSelectAllTopics} className="text-sm text-blue-600 hover:underline">Select All</button>
-                  <button onClick={handleDeselectAllTopics} className="text-sm text-blue-600 hover:underline">Deselect All</button>
+                  <button onClick={handleSelectAllTopics} className="text-sm text-blue-600 hover:underline">Seleccionar Todos</button>
+                  <button onClick={handleDeselectAllTopics} className="text-sm text-blue-600 hover:underline">Deseleccionar Todos</button>
               </div>
             </div>
 
             <div className="max-w-md mx-auto">
               <label htmlFor="numQuestions" className="block text-lg font-medium text-gray-700">
-                Number of Questions ({maxQuestionsAvailable} available)
+                Número de Preguntas ({maxQuestionsAvailable} disponibles)
               </label>
               <div className="flex items-center justify-center space-x-4 my-4">
                 <span className="text-sm font-medium text-gray-500">{minQuestions > 0 ? minQuestions : 0}</span>
@@ -363,8 +364,8 @@ export const QuizView: React.FC<QuizViewProps> = ({ quizData, fileName }) => {
             {maxQuestionsAvailable < minQuestions ? (
                 <p className="text-red-600 mt-4">
                 {selectedTopics.length > 0
-                    ? `Not enough questions found for the selected topics (minimum ${minQuestions} required).`
-                    : 'Please select at least one topic to start the quiz.'
+                    ? `No se encontraron suficientes preguntas para los temas seleccionados (se requiere un mínimo de ${minQuestions}).`
+                    : 'Por favor, selecciona al menos un tema para empezar el quiz.'
                 }
                 </p>
             ) : (
@@ -374,7 +375,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ quizData, fileName }) => {
                   disabled={selectedTopics.length === 0 || numQuestions === 0}
                   className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-105 transition-transform disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
                 >
-                  Start Quiz
+                  Empezar Quiz
                 </button>
               </div>
             )}
@@ -394,24 +395,24 @@ export const QuizView: React.FC<QuizViewProps> = ({ quizData, fileName }) => {
 
     return (
       <div className="text-center p-8 bg-white rounded-lg shadow-md">
-        <h2 className="text-3xl font-bold text-gray-800">Quiz Completed!</h2>
+        <h2 className="text-3xl font-bold text-gray-800">¡Quiz Completado!</h2>
         
         <div className={`mt-6 p-6 rounded-lg ${passed ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'} border`}>
-          <p className="text-lg text-gray-700">Your final score</p>
+          <p className="text-lg text-gray-700">Tu puntuación final</p>
           <p className={`mt-2 text-6xl font-bold ${passed ? 'text-green-600' : 'text-red-600'}`}>{percentageScore}%</p>
-          <p className="text-md text-gray-600">({correctAnswers} out of {activeQuestions.length} correct)</p>
+          <p className="text-md text-gray-600">({correctAnswers} de {activeQuestions.length} correctas)</p>
           
           {passed ? (
-            <p className="mt-4 font-semibold text-green-700">Congratulations! You've achieved the learning objective and mastered this material.</p>
+            <p className="mt-4 font-semibold text-green-700">¡Felicidades! Has alcanzado el objetivo de aprendizaje y dominado este material.</p>
           ) : (
-            <p className="mt-4 font-semibold text-red-700">You're getting there! Review the topics below to strengthen your understanding.</p>
+            <p className="mt-4 font-semibold text-red-700">¡Ya casi lo tienes! Revisa los siguientes temas para reforzar tu comprensión.</p>
           )}
         </div>
         
         {!passed && topicsToReview.length > 0 && (
           <div className="mt-8 text-left p-6 bg-yellow-50 border-l-4 border-yellow-400">
-            <h3 className="text-xl font-bold text-yellow-800">Areas for Review</h3>
-            <p className="text-yellow-700 mt-2">Based on your answers, we recommend reviewing the following topics in the summary or original document:</p>
+            <h3 className="text-xl font-bold text-yellow-800">Áreas a Repasar</h3>
+            <p className="text-yellow-700 mt-2">Basado en tus respuestas, recomendamos repasar los siguientes temas en el resumen o el documento original:</p>
             <ul className="list-disc list-inside mt-4 space-y-1 text-yellow-900">
               {topicsToReview.map((topic, index) => (
                 <li key={index} className="font-semibold">{topic}</li>
@@ -425,14 +426,14 @@ export const QuizView: React.FC<QuizViewProps> = ({ quizData, fileName }) => {
               onClick={handleRestartQuiz}
               className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              Start New Quiz
+              Empezar Nuevo Quiz
             </button>
             <button
               onClick={handleExportToDoc}
               className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
             >
               <DownloadIcon />
-              Export for Forms (.doc)
+              Exportar para Formularios (.doc)
             </button>
         </div>
       </div>
@@ -454,13 +455,13 @@ export const QuizView: React.FC<QuizViewProps> = ({ quizData, fileName }) => {
       </style>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-800">{quizData.quizTitle}</h2>
-        <p className="text-lg font-semibold text-blue-600">Score: {score}</p>
+        <p className="text-lg font-semibold text-blue-600">Puntuación: {score}</p>
       </div>
 
        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
           <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div>
       </div>
-       <p className="text-sm text-gray-500 text-right mb-4">Question {currentQuestionIndex + 1} of {activeQuestions.length}</p>
+       <p className="text-sm text-gray-500 text-right mb-4">Pregunta {currentQuestionIndex + 1} de {activeQuestions.length}</p>
 
       <div className="bg-white p-6 rounded-lg shadow">
         <p className="text-lg font-semibold text-gray-900 mb-4">{currentQuestion.questionText}</p>
@@ -489,7 +490,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ quizData, fileName }) => {
         {showExplanation && (
           <div className="explanation-fade-in">
             <div className="mt-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
-                <h4 className="font-bold text-yellow-800">Explanation</h4>
+                <h4 className="font-bold text-yellow-800">Explicación</h4>
                 <p className="text-yellow-700">{currentQuestion.explanation}</p>
             </div>
             <div className="mt-6 text-right">
@@ -497,7 +498,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ quizData, fileName }) => {
                     onClick={handleNextQuestion}
                     className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                    {currentQuestionIndex < activeQuestions.length - 1 ? 'Next Question' : 'Finish Quiz'}
+                    {currentQuestionIndex < activeQuestions.length - 1 ? 'Siguiente Pregunta' : 'Finalizar Quiz'}
                 </button>
             </div>
           </div>

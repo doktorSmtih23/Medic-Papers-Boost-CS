@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { SavedArticle } from '../types';
 
@@ -38,23 +39,23 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ library, onViewArticle
         <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg">
             <div className="flex justify-between items-center mb-6 border-b pb-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800">My Article Library</h2>
-                    <p className="text-sm text-gray-500">Review your saved analyses.</p>
+                    <h2 className="text-2xl font-bold text-gray-800">Mi Biblioteca de Artículos</h2>
+                    <p className="text-sm text-gray-500">Revisa tus análisis guardados.</p>
                 </div>
                 <button
                     onClick={onGoHome}
                     className="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                     <BackIcon />
-                    Back to Home
+                    Volver al Inicio
                 </button>
             </div>
 
             {library.length === 0 ? (
                 <div className="text-center py-16">
                     <EmptyStateIcon />
-                    <h3 className="mt-2 text-lg font-medium text-gray-900">Your library is empty</h3>
-                    <p className="mt-1 text-sm text-gray-500">Analyze a new document to save it here.</p>
+                    <h3 className="mt-2 text-lg font-medium text-gray-900">Tu biblioteca está vacía</h3>
+                    <p className="mt-1 text-sm text-gray-500">Analiza un nuevo documento para guardarlo aquí.</p>
                 </div>
             ) : (
                 <div className="space-y-8">
@@ -69,7 +70,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ library, onViewArticle
                                             className="flex-grow text-left"
                                         >
                                             <p className="font-semibold text-blue-700">{article.fileName}</p>
-                                            <p className="text-xs text-gray-500">Saved on: {new Date(article.savedAt).toLocaleDateString()}</p>
+                                            <p className="text-xs text-gray-500">Guardado el: {new Date(article.savedAt).toLocaleDateString()}</p>
                                         </button>
                                         <button
                                             onClick={(e) => {
@@ -77,7 +78,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ library, onViewArticle
                                                 onDeleteArticle(article.id);
                                             }}
                                             className="ml-4 flex-shrink-0 p-2 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                            aria-label={`Delete ${article.fileName}`}
+                                            aria-label={`Eliminar ${article.fileName}`}
                                         >
                                             <TrashIcon />
                                         </button>

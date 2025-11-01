@@ -1,5 +1,5 @@
 {
-  "name": "Medic Papers Boost CS",
-  "description": "An AI-powered assistant to transform dense medical documents into interactive visual summaries and educational quizzes. Upload a medical PDF to get started.",
+  "name": "MedicoBoost AI",
+  "description": "Un asistente con IA para transformar documentos médicos densos en resúmenes visuales interactivos y quizzes educativos. Sube un PDF médico para empezar.",
   "requestFramePermissions": []
 }
