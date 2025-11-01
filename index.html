@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-M" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Medic Papers Boost CS</title>
     <link rel="manifest" href="./manifest.json" />
@@ -78,16 +78,10 @@
   <body class="bg-gray-50">
     <div id="root"></div>
 
-    <script>
-      // Polyfill for Node.js's `process` object. This is needed to prevent
-      // a runtime error when the Gemini library tries to access `process.env.API_KEY`.
-      // The execution environment is responsible for making the actual API key available.
-      if (typeof window.process === 'undefined') {
-        window.process = { env: {} };
-      }
-    </script>
-    
-    <!-- The main app script is now a single file that Babel will transform. -->
-    <script type="text/babel" data-presets="react,typescript" data-type="module" src="./index.tsx"></script>
+    <!-- This script tag is a placeholder. The service worker loader will fetch its source. -->
+    <script id="main-app-script" type="text/babel" data-presets="react,typescript" data-type="module" data-src="./index.tsx"></script>
+
+    <!-- The service worker loader script -->
+    <script src="./register-sw.js"></script>
   </body>
 </html>

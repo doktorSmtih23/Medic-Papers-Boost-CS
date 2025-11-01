@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Home } from './components/Home.tsx';
 import { FileUpload } from './components/FileUpload.tsx';

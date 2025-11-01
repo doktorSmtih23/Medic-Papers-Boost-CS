@@ -1,15 +1,14 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import type { AnalysisResult } from '../types.ts';
 
-const API_KEY = process.env.API_KEY;
-if (!API_KEY) {
-  // In a real app, you might want to handle this more gracefully.
-  // For this context, we assume the key is available.
-  console.warn("API_KEY environment variable not set.");
+// Fix: Use process.env.API_KEY instead of localStorage and remove UI-related error messages.
+async function getAiClient() {
+    // The API key must be obtained exclusively from the environment variable `process.env.API_KEY`.
+    if (!process.env.API_KEY) {
+      throw new Error("API Key not found. Please ensure the API_KEY environment variable is set.");
+    }
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
 }
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 const responseSchema = {
     type: Type.OBJECT,
@@ -83,6 +82,7 @@ const responseSchema = {
 };
 
 export async function generateMedicalAnalysis(pdfText: string): Promise<AnalysisResult> {
+    const ai = await getAiClient();
     const model = 'gemini-2.5-pro';
 
     const prompt = `
@@ -107,7 +107,7 @@ export async function generateMedicalAnalysis(pdfText: string): Promise<Analysis
                 *   **Clinical Pearls (\`<blockquote>\`) (CRITICAL):** These must be styled as prominent callouts. Style the \`<blockquote>\` tag directly with a light blue background (\`background-color: #EFF6FF;\`), a thick, darker blue left border (\`border-left: 5px solid #3B82F6;\`), generous padding (\`padding: 1rem;\`), and rounded corners (\`border-radius: 0.5rem;\`). The text color should be a dark blue-gray for readability (\`color: #1E3A8A;\`).
                 *   **Interactive Tooltips:** Provide clean styling for \`.tooltip\` and \`.tooltiptext\`. The tooltip itself should be dark with white text for high contrast.
                 *   **CRITICAL PRINT STYLES:** This \`<style>\` block MUST include a \`@media print\` rule that accomplishes the following:
-                    1.  Applies a margin of at least \`40pt\` to the main printable container.
+                    1.  Hides non-essential UI elements.
                     2.  **MANDATORY & NON-NEGOTIABLE:** You MUST include the rule \`.card, section, blockquote, table { page-break-inside: avoid !important; }\` to prevent these crucial elements from splitting across printed pages. This is a critical requirement for professional output.
                     3.  Removes all box shadows, unnecessary backgrounds, and ensures text is black for optimal printing. Tooltips must be hidden.
             *   **HTML Body Content:**
@@ -160,6 +160,10 @@ export async function generateMedicalAnalysis(pdfText: string): Promise<Analysis
 
     } catch (error) {
         console.error("Error calling Gemini API:", error);
+        // Fix: Remove localStorage logic and update error message.
+        if (error instanceof Error && (error.message.includes("API key not valid") || error.message.includes("400 Bad Request"))) {
+            throw new Error("The provided API Key is not valid or has expired. Please check your API_KEY environment variable.");
+        }
         throw new Error("Failed to generate analysis from the AI model.");
     }
 }

@@ -1,4 +1,3 @@
-
 import type { SavedArticle, AnalysisResult } from '../types.ts';
 
 const LIBRARY_KEY = 'medicPapersBoostLibrary';
