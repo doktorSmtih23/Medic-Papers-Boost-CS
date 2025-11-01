@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface HomeProps {
@@ -30,24 +31,24 @@ export const Home: React.FC<HomeProps> = ({ onGetStarted, onViewLibrary }) => {
         </div>
         <div className="relative px-4 py-16 sm:px-6 sm:py-24 lg:py-32 lg:px-8">
           <h1 className="text-center text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-            <span className="block text-gray-900">Unlock Medical Insights</span>
-            <span className="block text-blue-600">Instantly.</span>
+            <span className="block text-gray-900">Desbloquea Conocimiento Médico</span>
+            <span className="block text-blue-600">Al Instante.</span>
           </h1>
           <p className="mt-6 max-w-lg mx-auto text-center text-xl text-gray-600 sm:max-w-3xl">
-            Medic Papers Boost CS transforms dense medical documents into clear summaries and interactive quizzes, helping you learn faster and retain more.
+            MedicoBoost AI transforma documentos médicos densos en resúmenes claros y quizzes interactivos, ayudándote a aprender más rápido y a retener más información.
           </p>
           <div className="mt-10 max-w-md mx-auto sm:max-w-lg sm:flex sm:justify-center gap-4">
               <button
                 onClick={onGetStarted}
                 className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 sm:w-auto"
               >
-                Analyze a Document
+                Analizar un Documento
               </button>
               <button
                 onClick={onViewLibrary}
                 className="w-full mt-4 sm:mt-0 flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-blue-700 bg-blue-100 hover:bg-blue-200 sm:w-auto"
               >
-                View My Library
+                Ver Mi Biblioteca
               </button>
           </div>
         </div>
@@ -60,27 +61,27 @@ export const Home: React.FC<HomeProps> = ({ onGetStarted, onViewLibrary }) => {
                       <div className="flex items-center justify-center h-16 w-16 rounded-md bg-blue-100 text-white mx-auto">
                           <FeatureIcon1 />
                       </div>
-                      <h3 className="mt-5 text-lg font-medium text-gray-900">AI-Powered Summaries</h3>
+                      <h3 className="mt-5 text-lg font-medium text-gray-900">Resúmenes Potenciados por IA</h3>
                       <p className="mt-2 text-base text-gray-500">
-                          Go from pages of text to scannable summaries with key takeaways, clinical pearls, and data tables in seconds.
+                          Pasa de páginas de texto a resúmenes visuales con puntos clave, perlas clínicas y tablas de datos en segundos.
                       </p>
                   </div>
                   <div className="text-center">
                       <div className="flex items-center justify-center h-16 w-16 rounded-md bg-blue-100 text-white mx-auto">
                            <FeatureIcon2 />
                       </div>
-                      <h3 className="mt-5 text-lg font-medium text-gray-900">Interactive Learning</h3>
+                      <h3 className="mt-5 text-lg font-medium text-gray-900">Aprendizaje Interactivo</h3>
                       <p className="mt-2 text-base text-gray-500">
-                          Reinforce your knowledge with auto-generated quizzes based on the document's content, complete with scoring and explanations.
+                          Refuerza tus conocimientos con quizzes autogenerados basados en el contenido del documento, con puntuación y explicaciones.
                       </p>
                   </div>
                   <div className="text-center">
                       <div className="flex items-center justify-center h-16 w-16 rounded-md bg-blue-100 text-white mx-auto">
                           <FeatureIcon3 />
                       </div>
-                      <h3 className="mt-5 text-lg font-medium text-gray-900">Secure and Private</h3>
+                      <h3 className="mt-5 text-lg font-medium text-gray-900">Seguro y Privado</h3>
                       <p className="mt-2 text-base text-gray-500">
-                          Your documents are processed on the fly and never stored. Your privacy and data security are our top priority.
+                          Tus documentos se procesan al momento y nunca se almacenan. Tu privacidad y la seguridad de tus datos son nuestra máxima prioridad.
                       </p>
                   </div>
               </div>

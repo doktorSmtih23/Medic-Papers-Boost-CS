@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 
 interface FileUploadProps {
@@ -41,7 +42,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, isLoading 
       if(files[0].type === 'application/pdf') {
           onFileUpload(files[0]);
       } else {
-          alert('Please upload a PDF file.');
+          alert('Por favor, sube un archivo PDF.');
       }
     }
   }, [onFileUpload]);
@@ -55,8 +56,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, isLoading 
 
   return (
     <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">Upload Your Medical Document</h2>
-      <p className="text-gray-600 mb-6">Drag and drop a PDF file or click to select one.</p>
+      <h2 className="text-2xl font-bold text-gray-800 mb-2">Sube tu Documento Médico</h2>
+      <p className="text-gray-600 mb-6">Arrastra y suelta un archivo PDF o haz clic para seleccionarlo.</p>
       
       <div
         onDragEnter={handleDragEnter}
@@ -67,15 +68,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, isLoading 
       >
         <UploadIcon />
         <span className="mt-2 block text-sm font-medium text-gray-900">
-          Drag and drop your PDF here
+          Arrastra y suelta tu PDF aquí
         </span>
-        <span className="text-xs text-gray-500">or</span>
+        <span className="text-xs text-gray-500">o</span>
         <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-          <span> browse files</span>
+          <span> busca en tus archivos</span>
           <input id="file-upload" name="file-upload" type="file" className="sr-only" accept=".pdf" onChange={handleFileChange} disabled={isLoading} />
         </label>
       </div>
-       <p className="text-xs text-gray-500 mt-4">Your documents are processed securely and are not stored.</p>
+       <p className="text-xs text-gray-500 mt-4">Tus documentos se procesan de forma segura y no se almacenan.</p>
     </div>
   );
 };

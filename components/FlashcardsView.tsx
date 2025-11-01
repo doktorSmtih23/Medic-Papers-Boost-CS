@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Flashcard } from '../types.ts';
 
@@ -119,7 +120,7 @@ export const FlashcardsView: React.FC<FlashcardsViewProps> = ({ flashcards, file
   
   const handleExportCsv = () => {
     if (filteredFlashcards.length === 0) {
-        alert("No flashcards to export. Please select topics that contain flashcards.");
+        alert("No hay tarjetas para exportar. Por favor, selecciona temas que contengan tarjetas.");
         return;
     }
 
@@ -130,7 +131,7 @@ export const FlashcardsView: React.FC<FlashcardsViewProps> = ({ flashcards, file
         return field;
     };
 
-    const headers = ['Term', 'Definition', 'Topic'];
+    const headers = ['Termino', 'Definicion', 'Tema'];
     const rows = filteredFlashcards.map(card => [
         escapeCsvField(card.term),
         escapeCsvField(card.definition),
@@ -147,7 +148,7 @@ export const FlashcardsView: React.FC<FlashcardsViewProps> = ({ flashcards, file
     const link = document.createElement("a");
     link.setAttribute("href", url);
     const sanitizedFileName = fileName.replace(/\.pdf$/i, '').replace(/[^a-z0-9]/gi, '_');
-    link.setAttribute("download", `${sanitizedFileName} - Flashcards.csv`);
+    link.setAttribute("download", `${sanitizedFileName} - Tarjetas.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -156,11 +157,11 @@ export const FlashcardsView: React.FC<FlashcardsViewProps> = ({ flashcards, file
   if (!deckStarted) {
     return (
         <div className="max-w-4xl mx-auto text-center p-8 bg-gray-50 rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Flashcard Deck Setup</h2>
-            <p className="text-gray-600 mb-8">Customize your study session.</p>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Configuración de Tarjetas de Estudio</h2>
+            <p className="text-gray-600 mb-8">Personaliza tu sesión de estudio.</p>
 
             <div className="max-w-xl mx-auto my-8 text-left">
-              <h3 className="text-lg font-medium text-gray-700 mb-3">Filter by Topic</h3>
+              <h3 className="text-lg font-medium text-gray-700 mb-3">Filtrar por Tema</h3>
               <div className="flex flex-wrap gap-2 mb-4">
                 {allTopics.map(topic => (
                   <button
@@ -177,14 +178,14 @@ export const FlashcardsView: React.FC<FlashcardsViewProps> = ({ flashcards, file
                 ))}
               </div>
               <div className="flex gap-4">
-                  <button onClick={handleSelectAllTopics} className="text-sm text-blue-600 hover:underline">Select All</button>
-                  <button onClick={handleDeselectAllTopics} className="text-sm text-blue-600 hover:underline">Deselect All</button>
+                  <button onClick={handleSelectAllTopics} className="text-sm text-blue-600 hover:underline">Seleccionar Todos</button>
+                  <button onClick={handleDeselectAllTopics} className="text-sm text-blue-600 hover:underline">Deseleccionar Todos</button>
               </div>
             </div>
 
             <div className="max-w-md mx-auto">
               <label htmlFor="numFlashcards" className="block text-lg font-medium text-gray-700">
-                Number of Flashcards ({maxFlashcardsAvailable} available)
+                Número de Tarjetas ({maxFlashcardsAvailable} disponibles)
               </label>
               <div className="flex items-center justify-center space-x-4 my-4">
                 <span className="text-sm font-medium text-gray-500">{minFlashcards > 0 ? minFlashcards : 0}</span>
@@ -208,8 +209,8 @@ export const FlashcardsView: React.FC<FlashcardsViewProps> = ({ flashcards, file
             {maxFlashcardsAvailable < minFlashcards ? (
                 <p className="text-red-600 mt-4">
                 {selectedTopics.length > 0
-                    ? `Not enough flashcards found for the selected topics (minimum ${minFlashcards} required).`
-                    : 'Please select at least one topic to start.'
+                    ? `No se encontraron suficientes tarjetas para los temas seleccionados (se requiere un mínimo de ${minFlashcards}).`
+                    : 'Por favor, selecciona al menos un tema para empezar.'
                 }
                 </p>
             ) : (
@@ -219,14 +220,14 @@ export const FlashcardsView: React.FC<FlashcardsViewProps> = ({ flashcards, file
                   disabled={selectedTopics.length === 0 || numFlashcards === 0}
                   className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-105 transition-transform disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
                 >
-                  Start Studying
+                  Empezar a Estudiar
                 </button>
                 <button
                     onClick={handleExportCsv}
                     className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                 >
                     <DownloadIcon />
-                    Export Filtered to CSV
+                    Exportar Filtro a CSV
                 </button>
               </div>
             )}
@@ -299,14 +300,14 @@ export const FlashcardsView: React.FC<FlashcardsViewProps> = ({ flashcards, file
           </div>
         </div>
         
-        <p className="text-sm text-gray-500 mt-4">Click card to flip (or press spacebar)</p>
+        <p className="text-sm text-gray-500 mt-4">Haz clic en la tarjeta para voltearla (o presiona la barra espaciadora)</p>
 
         <div className="flex items-center justify-between w-full mt-6">
           <button
             onClick={handlePrev}
             disabled={currentIndex === 0}
             className="p-3 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Previous card"
+            aria-label="Tarjeta anterior"
           >
             <ArrowLeftIcon />
           </button>
@@ -317,7 +318,7 @@ export const FlashcardsView: React.FC<FlashcardsViewProps> = ({ flashcards, file
             onClick={handleNext}
             disabled={currentIndex === activeFlashcards.length - 1}
             className="p-3 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Next card"
+            aria-label="Siguiente tarjeta"
           >
             <ArrowRightIcon />
           </button>
@@ -328,25 +329,25 @@ export const FlashcardsView: React.FC<FlashcardsViewProps> = ({ flashcards, file
                 onClick={handleRestart}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-                Change Settings
+                Cambiar Configuración
             </button>
             <button
                 onClick={handleExportCsv}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
             >
                 <DownloadIcon />
-                Export Filtered to CSV
+                Exportar Filtro a CSV
             </button>
         </div>
       </>
       ) : (
         <div className="text-center p-8">
-            <p className="text-lg text-gray-600">No flashcards available for the selected topics.</p>
+            <p className="text-lg text-gray-600">No hay tarjetas disponibles para los temas seleccionados.</p>
             <button
                 onClick={handleRestart}
                 className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-                Change Settings
+                Cambiar Configuración
             </button>
         </div>
       )}

@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import type { AnalysisResult } from '../types.ts';
 
@@ -5,7 +6,7 @@ import type { AnalysisResult } from '../types.ts';
 async function getAiClient() {
     // The API key must be obtained exclusively from the environment variable `process.env.API_KEY`.
     if (!process.env.API_KEY) {
-      throw new Error("API Key not found. Please ensure the API_KEY environment variable is set.");
+      throw new Error("Clave de API no encontrada. Asegúrate de que la variable de entorno API_KEY esté configurada.");
     }
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
 }
@@ -15,14 +16,14 @@ const responseSchema = {
     properties: {
         summary: {
             type: Type.STRING,
-            description: "The summary in a self-contained HTML string format."
+            description: "El resumen en formato de cadena de texto HTML autocontenida."
         },
         quiz: {
             type: Type.OBJECT,
             properties: {
                 quizTitle: {
                     type: Type.STRING,
-                    description: "Title of the quiz related to the document."
+                    description: "Título del quiz relacionado con el documento."
                 },
                 settings: {
                     type: Type.OBJECT,
@@ -46,7 +47,7 @@ const responseSchema = {
                             explanation: { type: Type.STRING },
                             topic: { 
                                 type: Type.STRING,
-                                description: "The main topic or document section this question relates to (e.g., 'Diagnosis', 'Treatment Protocol')."
+                                description: "El tema principal o sección del documento al que se refiere esta pregunta (ej. 'Diagnóstico', 'Protocolo de Tratamiento')."
                             }
                         },
                         required: ['questionText', 'options', 'correctAnswerIndex', 'explanation', 'topic']
@@ -57,21 +58,21 @@ const responseSchema = {
         },
         flashcards: {
             type: Type.ARRAY,
-            description: "An array of key medical terms and their definitions from the document.",
+            description: "Un array de términos médicos clave y sus definiciones del documento.",
             items: {
                 type: Type.OBJECT,
                 properties: {
                     term: {
                         type: Type.STRING,
-                        description: "The medical term or concept."
+                        description: "El término o concepto médico."
                     },
                     definition: {
                         type: Type.STRING,
-                        description: "A concise definition or explanation of the term."
+                        description: "Una definición o explicación concisa del término."
                     },
                     topic: {
                         type: Type.STRING,
-                        description: "The main topic or document section this flashcard relates to (e.g., 'Pharmacology', 'Diagnosis')."
+                        description: "El tema principal o sección del documento al que se refiere esta tarjeta (ej. 'Farmacología', 'Diagnóstico')."
                     }
                 },
                 required: ['term', 'definition', 'topic']
@@ -86,53 +87,53 @@ export async function generateMedicalAnalysis(pdfText: string): Promise<Analysis
     const model = 'gemini-2.5-pro';
 
     const prompt = `
-        You are "Medic Papers Boost CS", an expert medical document processing and educational gamification assistant. Your purpose is to transform dense medical documents into three distinct, high-quality outputs: a Summary, an Assessment Quiz, and a set of Flashcards.
+        Eres "MedicoBoost AI", un asistente experto en procesamiento de documentos médicos y gamificación educativa. Tu propósito es transformar documentos médicos densos en tres productos distintos y de alta calidad: un Resumen, un Quiz de Evaluación y un conjunto de Tarjetas de Estudio (Flashcards).
 
-        Based on the provided medical document content, generate a JSON object with three root keys: "summary", "quiz", and "flashcards".
+        Basado en el contenido del documento médico proporcionado, genera un objeto JSON con tres claves raíz: "summary", "quiz" y "flashcards".
 
-        1.  **summary**: The value for this key must be a single, self-contained HTML string. This is the most critical output. It MUST be visually engaging and highly structured, not just flat text. Adhere strictly to the following structure and requirements:
-            *   **A Self-Contained \`<style>\` Block:** This is MANDATORY. Provide comprehensive CSS for a professional, modern, and **fully responsive** layout. Use professional color palettes (e.g., blues, grays). The base font should match the application: \`font-family: 'Inter', sans-serif;\`.
-                *   **General Readability:** Set a comfortable base \`font-size\` and \`line-height\` for body text.
-                *   **Section Headers (\`<h2>\`):** Style these for clear visual hierarchy. They must have a larger \`font-size\`, heavier \`font-weight (e.g., 600)\`, a distinct \`color\` (e.g., a professional blue like #1E40AF), a subtle bottom border (e.g., \`border-bottom: 2px solid #BFDBFE;\`), and adequate padding and margins. Ensure the inline SVG icon is perfectly aligned using flexbox.
-                *   **Key Takeaway Cards:**
-                    *   The container (\`.card-grid\`) MUST be a responsive grid (\`display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));\`).
-                    *   Individual cards (\`.card\`) must have a clean look with a white background, soft border (\`border: 1px solid #e5e7eb;\`), rounded corners (\`border-radius: 0.75rem;\`), ample padding, and a refined box-shadow (\`box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);\`).
-                    *   Add a subtle hover effect (\`transform: translateY(-4px);\`) for interactivity.
-                *   **Styled Tables (CRITICAL):**
-                    *   Every \`<table>\` element MUST be wrapped in a container div, for example \`<div class="table-wrapper">\`.
-                    *   The wrapper class (\`.table-wrapper\`) MUST have \`overflow-x: auto;\` to ensure tables scroll horizontally on small screens and do not break the page layout.
-                    *   The table itself should have \`width: 100%;\` and \`border-collapse: collapse;\`.
-                    *   Table headers (\`<th>\`) must be distinct: use a light gray background (\`background-color: #f3f4f6;\`), bold font, and sufficient padding (\`padding: 0.75rem;\`).
-                    *   Table rows (\`<td>\`) should have clear borders (\`border: 1px solid #e5e7eb;\`) and padding. Use alternating row colors (\`tr:nth-child(even) { background-color: #f9fafb; }\`) for scannability.
-                *   **Clinical Pearls (\`<blockquote>\`) (CRITICAL):** These must be styled as prominent callouts. Style the \`<blockquote>\` tag directly with a light blue background (\`background-color: #EFF6FF;\`), a thick, darker blue left border (\`border-left: 5px solid #3B82F6;\`), generous padding (\`padding: 1rem;\`), and rounded corners (\`border-radius: 0.5rem;\`). The text color should be a dark blue-gray for readability (\`color: #1E3A8A;\`).
-                *   **Interactive Tooltips:** Provide clean styling for \`.tooltip\` and \`.tooltiptext\`. The tooltip itself should be dark with white text for high contrast.
-                *   **CRITICAL PRINT STYLES:** This \`<style>\` block MUST include a \`@media print\` rule that accomplishes the following:
-                    1.  Hides non-essential UI elements.
-                    2.  **MANDATORY & NON-NEGOTIABLE:** You MUST include the rule \`.card, section, blockquote, table { page-break-inside: avoid !important; }\` to prevent these crucial elements from splitting across printed pages. This is a critical requirement for professional output.
-                    3.  Removes all box shadows, unnecessary backgrounds, and ensures text is black for optimal printing. Tooltips must be hidden.
-            *   **HTML Body Content:**
-                *   **Main Title:** Start with an \`<h1>\` containing the document's main topic.
-                *   **Key Takeaways (Puntos Clave):** This section is MANDATORY. Generate the 5-7 most vital points. Display them in a responsive grid of visually distinct "cards" using the \`.card-grid\` and \`.card\` classes. Each card must have a border, a subtle shadow, and an icon.
-                *   **Thematic Sections:** For each major topic (e.g., Diagnosis, Treatment), create a \`<section>\`. Each section MUST begin with a styled \`<h2>\` containing a relevant inline SVG icon and the section title. The containing \`<section>\` tag MUST have NO background or border.
-                *   **Rich Content Formatting:** Inside each section, you MUST use appropriate HTML to structure the content. Use:
-                    *   \`<strong>\` for important terms.
-                    *   \`<ul>\` with \`<li>\` for bulleted lists.
-                    *   \`<table>\` for presenting structured data (e.g., drug dosages, diagnostic criteria). Tables are essential for clarity and must be wrapped in a div for horizontal scrolling.
-                    *   \`<blockquote>\` styled as a "Clinical Pearl" or "Pro-Tip" for highlighting crucial advice.
-                *   **Interactive Tooltips (MANDATORY):** Scan the text for at least 5-10 complex medical terms. For each, wrap it in the tooltip structure: \`<span class="tooltip">Term<span class="tooltiptext">A brief definition.</span></span>\`. This is not optional.
+        1.  **summary**: El valor de esta clave debe ser una única cadena de texto HTML autocontenida. Este es el resultado más crítico. DEBE ser visualmente atractivo y altamente estructurado, no solo texto plano. Adhiérete estrictamente a la siguiente estructura y requisitos:
+            *   **Un Bloque \`<style>\` Autocontenido:** Esto es OBLIGATORIO. Proporciona CSS completo para un diseño profesional, moderno y **totalmente adaptable (responsive)**. Usa paletas de colores profesionales (ej. azules, grises). La fuente base debe coincidir con la de la aplicación: \`font-family: 'Inter', sans-serif;\`.
+                *   **Legibilidad General:** Establece un \`font-size\` y \`line-height\` base cómodos para el texto del cuerpo.
+                *   **Encabezados de Sección (\`<h2>\`):** Estilízalos para una jerarquía visual clara. Deben tener un \`font-size\` más grande, un \`font-weight\` mayor (ej. 600), un \`color\` distintivo (ej. un azul profesional como #1E40AF), un borde inferior sutil (ej. \`border-bottom: 2px solid #BFDBFE;\`), y padding y márgenes adecuados. Asegúrate de que el icono SVG en línea esté perfectamente alineado usando flexbox.
+                *   **Tarjetas de Puntos Clave:**
+                    *   El contenedor (\`.card-grid\`) DEBE ser una cuadrícula adaptable (\`display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));\`).
+                    *   Las tarjetas individuales (\`.card\`) deben tener un aspecto limpio con fondo blanco, un borde suave (\`border: 1px solid #e5e7eb;\`), esquinas redondeadas (\`border-radius: 0.75rem;\`), amplio padding y una sombra de caja refinada (\`box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);\`).
+                    *   Añade un efecto sutil al pasar el ratón (\`transform: translateY(-4px);\`) para interactividad.
+                *   **Tablas Estilizadas (CRÍTICO):**
+                    *   Cada elemento \`<table>\` DEBE estar envuelto en un div contenedor, por ejemplo \`<div class="table-wrapper">\`.
+                    *   La clase contenedora (\`.table-wrapper\`) DEBE tener \`overflow-x: auto;\` para asegurar que las tablas se desplacen horizontalmente en pantallas pequeñas y no rompan el diseño de la página.
+                    *   La tabla en sí debe tener \`width: 100%;\` y \`border-collapse: collapse;\`.
+                    *   Los encabezados de tabla (\`<th>\`) deben ser distintos: usa un fondo gris claro (\`background-color: #f3f4f6;\`), fuente en negrita y padding suficiente (\`padding: 0.75rem;\`).
+                    *   Las filas de la tabla (\`<td>\`) deben tener bordes claros (\`border: 1px solid #e5e7eb;\`) y padding. Usa colores de fila alternos (\`tr:nth-child(even) { background-color: #f9fafb; }\`) para facilitar la lectura.
+                *   **Perlas Clínicas (\`<blockquote>\`) (CRÍTICO):** Deben ser estilizadas como llamadas de atención prominentes. Estiliza la etiqueta \`<blockquote>\` directamente con un fondo azul claro (\`background-color: #EFF6FF;\`), un borde izquierdo grueso de un azul más oscuro (\`border-left: 5px solid #3B82F6;\`), padding generoso (\`padding: 1rem;\`) y esquinas redondeadas (\`border-radius: 0.5rem;\`). El color del texto debe ser un gris azulado oscuro para la legibilidad (\`color: #1E3A8A;\`).
+                *   **Tooltips Interactivos:** Proporciona un estilo limpio para \`.tooltip\` y \`.tooltiptext\`. El tooltip en sí debe ser oscuro con texto blanco para un alto contraste.
+                *   **ESTILOS DE IMPRESIÓN CRÍTICOS:** Este bloque \`<style>\` DEBE incluir una regla \`@media print\` que logre lo siguiente:
+                    1.  Oculte elementos de la interfaz no esenciales.
+                    2.  **OBLIGATORIO E INNEGOCIABLE:** DEBES incluir la regla \`.card, section, blockquote, table { page-break-inside: avoid !important; }\` para evitar que estos elementos cruciales se dividan entre páginas impresas. Este es un requisito crítico para un resultado profesional.
+                    3.  Elimine todas las sombras de caja, fondos innecesarios y asegure que el texto sea negro para una impresión óptima. Los tooltips deben ocultarse.
+            *   **Contenido del Cuerpo HTML:**
+                *   **Título Principal:** Comienza con un \`<h1>\` que contenga el tema principal del documento.
+                *   **Puntos Clave:** Esta sección es OBLIGATORIA. Genera los 5-7 puntos más vitales. Muéstralos en una cuadrícula adaptable de "tarjetas" visualmente distintas usando las clases \`.card-grid\` y \`.card\`. Cada tarjeta debe tener un borde, una sombra sutil y un icono.
+                *   **Secciones Temáticas:** Para cada tema principal (ej. Diagnóstico, Tratamiento), crea una \`<section>\`. Cada sección DEBE comenzar con un \`<h2>\` estilizado que contenga un icono SVG en línea relevante y el título de la sección. La etiqueta \`<section>\` contenedora NO DEBE tener fondo ni borde.
+                *   **Formato de Contenido Enriquecido:** Dentro de cada sección, DEBES usar el HTML apropiado para estructurar el contenido. Usa:
+                    *   \`<strong>\` para términos importantes.
+                    *   \`<ul>\` con \`<li>\` para listas con viñetas.
+                    *   \`<table>\` para presentar datos estructurados (ej. dosis de medicamentos, criterios de diagnóstico). Las tablas son esenciales para la claridad y deben estar envueltas en un div para el desplazamiento horizontal.
+                    *   \`<blockquote>\` estilizado como "Perla Clínica" o "Consejo Profesional" para resaltar consejos cruciales.
+                *   **Tooltips Interactivos (OBLIGATORIO):** Escanea el texto en busca de al menos 5-10 términos médicos complejos. Para cada uno, envuélvelo en la estructura de tooltip: \`<span class="tooltip">Término<span class="tooltiptext">Una breve definición.</span></span>\`. Esto no es opcional.
 
-        2.  **quiz**: The value for this key must be a JSON object for an "Interactive Quiz". This JSON must:
-            *   Contain a 'quizTitle'.
-            *   Contain a 'settings' object with 'positiveScore: 10' and 'negativeScore: -5'.
-            *   Contain a 'questions' array of exactly 20 multiple-choice questions if the source material allows.
-            *   Each question object must have 'questionText', 'options' (array of 4 strings), 'correctAnswerIndex' (number 0-3), 'explanation', and 'topic'. The 'topic' should be a short string identifying the part of the document the question is about (e.g., "Pathophysiology", "Treatment Guidelines").
+        2.  **quiz**: El valor de esta clave debe ser un objeto JSON para un "Quiz Interactivo". Este JSON debe:
+            *   Contener un 'quizTitle'.
+            *   Contener un objeto 'settings' con 'positiveScore: 10' y 'negativeScore: -5'.
+            *   Contener un array 'questions' de exactamente 20 preguntas de opción múltiple si el material de origen lo permite.
+            *   Cada objeto de pregunta debe tener 'questionText', 'options' (un array de 4 cadenas de texto), 'correctAnswerIndex' (número del 0 al 3), 'explanation' y 'topic'. El 'topic' debe ser una cadena corta que identifique la parte del documento a la que se refiere la pregunta (ej. "Fisiopatología", "Guías de Tratamiento").
             
-        3.  **flashcards**: The value for this key must be a JSON array of at least 10 flashcard objects. Each object must contain three keys: "term", "definition", and "topic".
-            *   "term": A key medical term, concept, or abbreviation from the document.
-            *   "definition": A concise and accurate definition of the term, strictly based on the provided document.
-            *   "topic": A short string identifying the part of the document the flashcard is about (e.g., "Pharmacology", "Diagnostic Criteria").
+        3.  **flashcards**: El valor de esta clave debe ser un array JSON de al menos 10 objetos de tarjetas de estudio. Cada objeto debe contener tres claves: "term", "definition" y "topic".
+            *   "term": Un término médico clave, concepto o abreviatura del documento.
+            *   "definition": Una definición concisa y precisa del término, basada estrictamente en el documento proporcionado.
+            *   "topic": Una cadena corta que identifique la parte del documento a la que se refiere la tarjeta (ej. "Farmacología", "Criterios de Diagnóstico").
 
-        Here is the medical document content:
+        Aquí está el contenido del documento médico:
         ---
         ${pdfText}
         ---
@@ -153,17 +154,17 @@ export async function generateMedicalAnalysis(pdfText: string): Promise<Analysis
 
         // Basic validation
         if (!parsedResult.summary || !parsedResult.quiz || !parsedResult.quiz.questions || !parsedResult.flashcards) {
-            throw new Error("Invalid response structure from AI model.");
+            throw new Error("Estructura de respuesta inválida del modelo de IA.");
         }
 
         return parsedResult as AnalysisResult;
 
     } catch (error) {
-        console.error("Error calling Gemini API:", error);
+        console.error("Error al llamar a la API de Gemini:", error);
         // Fix: Remove localStorage logic and update error message.
         if (error instanceof Error && (error.message.includes("API key not valid") || error.message.includes("400 Bad Request"))) {
-            throw new Error("The provided API Key is not valid or has expired. Please check your API_KEY environment variable.");
+            throw new Error("La Clave de API proporcionada no es válida o ha caducado. Por favor, comprueba tu variable de entorno API_KEY.");
         }
-        throw new Error("Failed to generate analysis from the AI model.");
+        throw new Error("No se pudo generar el análisis desde el modelo de IA.");
     }
 }
