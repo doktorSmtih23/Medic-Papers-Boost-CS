@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface SummaryViewProps {
@@ -26,7 +25,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({ htmlContent, fileName 
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
                 <PrintIcon />
-                Imprimir / Guardar PDF
+                Print / Save PDF
             </button>
         </div>
         <div id="print-section" className="prose max-w-none" dangerouslySetInnerHTML={{ __html: htmlContent }} />

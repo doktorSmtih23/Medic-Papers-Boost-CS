@@ -4,40 +4,19 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
-    
     return {
-      // Base path para GitHub Pages
-      base: mode === 'production' ? '/Medic-Papers-Boost-CS/' : '/',
-      
       server: {
         port: 3000,
         host: '0.0.0.0',
       },
-      
       plugins: [react()],
-      
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
       },
-      
       resolve: {
         alias: {
-          '@': path.resolve('.'),
-        }
-      },
-      
-      build: {
-        outDir: 'dist',
-        assetsDir: 'assets',
-        sourcemap: false,
-        rollupOptions: {
-          output: {
-            manualChunks: {
-              react: ['react', 'react-dom'],
-              pdfjs: ['pdfjs-dist']
-            }
-          }
+          '@': path.resolve(__dirname, '.'),
         }
       }
     };

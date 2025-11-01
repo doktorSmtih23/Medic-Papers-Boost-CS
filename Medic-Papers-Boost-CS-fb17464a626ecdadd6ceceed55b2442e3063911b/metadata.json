@@ -1,0 +1,5 @@
+{
+  "name": "Medic Papers Boost CS",
+  "description": "An AI-powered assistant to transform dense medical documents into interactive visual summaries and educational quizzes. Upload a medical PDF to get started.",
+  "requestFramePermissions": []
+}

@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3e%3cpath d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' /%3e%3c/svg%3e">
+    <meta charset="UTF-M" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MedicoBoost AI</title>
+    <title>Medic Papers Boost CS</title>
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3e%3cpath d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' /%3e%3c/svg%3e">
     <meta name="theme-color" content="#2563eb" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Babel for in-browser TSX transformation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
       body {
@@ -62,11 +66,11 @@
   <script type="importmap">
 {
   "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "pdfjs-dist": "https://aistudiocdn.com/pdfjs-dist@^5.4.296",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "pdfjs-dist": "https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.min.mjs",
     "path": "https://aistudiocdn.com/path@^0.12.7",
     "vite": "https://aistudiocdn.com/vite@^7.1.12",
     "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.0"
@@ -76,6 +80,17 @@
 </head>
   <body class="bg-gray-50">
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+
+    <script>
+      // Polyfill for Node.js's `process` object. This is needed to prevent
+      // a runtime error when the Gemini library tries to access `process.env.API_KEY`.
+      // The execution environment is responsible for making the actual API key available.
+      if (typeof window.process === 'undefined') {
+        window.process = { env: {} };
+      }
+    </script>
+    
+    <!-- The main app script is now a single file that Babel will transform. -->
+    <script type="text/babel" data-presets="react,typescript" data-type="module" src="./index.tsx"></script>
   </body>
 </html>
