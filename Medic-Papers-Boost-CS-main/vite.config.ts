@@ -6,8 +6,8 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     
     return {
-      // IMPORTANTE: Cambia esto por el nombre exacto de tu repositorio
-      base: mode === 'production' ? '/NOMBRE-DE-TU-REPOSITORIO/' : '/',
+      // Base path para GitHub Pages
+      base: mode === 'production' ? '/Medic-Papers-Boost-CS/' : '/',
       
       server: {
         port: 3000,
