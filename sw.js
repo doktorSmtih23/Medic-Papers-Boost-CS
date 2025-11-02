@@ -1,7 +1,8 @@
+
 // A unique cache name is important for cache busting.
 // Incrementing the version number will force the service worker to update
 // and re-cache all essential application files.
-const CACHE_NAME = 'medic-boost-cache-v2';
+const CACHE_NAME = 'medic-boost-cache-v3';
 
 // Files that constitute the "app shell" - the minimal resources needed for the app to run.
 const urlsToCache = [
@@ -63,7 +64,7 @@ self.addEventListener('fetch', event => {
           // We must clone the response because a response is a stream
           // and can only be consumed once. We need one for the cache and one for the browser.
           cache.put(event.request, networkResponse.clone());
-          console.log(`[SW] Cached new version of: ${event.request.url}`);
+          // console.log(`[SW] Cached new version of: ${event.request.url}`);
           // 3. Return the original network response to the browser.
           return networkResponse;
         });

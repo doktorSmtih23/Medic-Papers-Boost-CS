@@ -1,5 +1,4 @@
 
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -51,6 +50,22 @@ interface SavedArticle {
   specialty: string;
   analysisResult: AnalysisResult;
   savedAt: string;
+}
+
+// A simplified but effective type for pdfjs TextItem
+interface PdfTextItem {
+    str: string;
+    dir: string;
+    width: number;
+    height: number;
+    transform: number[];
+    fontName: string;
+    hasEOL: boolean;
+}
+
+// Type guard to check if an item from getTextContent is a TextItem
+function isPdfTextItem(item: any): item is PdfTextItem {
+    return typeof item.str === 'string';
 }
 
 // --- services/libraryService.ts ---
@@ -142,26 +157,15 @@ const responseSchema = {
     required: ['summary', 'quiz', 'flashcards']
 };
 
-async function generateMedicalAnalysis(pdfText: string, detailLevel: 'simple' | 'concrete' | 'deep'): Promise<AnalysisResult> {
+async function generateMedicalAnalysis(pdfText: string): Promise<AnalysisResult> {
     const API_KEY = process.env.API_KEY;
     if (!API_KEY) {
       throw new Error("API Key not found. Please select or enter an API Key to continue.");
     }
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 
-    let detailInstruction = '';
-    switch (detailLevel) {
-        case 'simple':
-            detailInstruction = 'The user has selected: "Simple, para tener idea del tema". The summary must be a brief, high-level overview, written in simple language. Focus only on the document\'s main purpose and final conclusions. The target audience is someone who just wants to get a general idea of the topic quickly.';
-            break;
-        case 'concrete':
-            detailInstruction = 'The user has selected: "Concreto, tener conceptos fundamentales". The summary must be well-balanced and concise, focusing on the fundamental concepts, key methodologies, and principal findings. It should define the most important terms clearly. The target audience is someone who needs to understand the core pillars of the document without excessive detail.';
-            break;
-        case 'deep':
-            detailInstruction = 'The user has selected: "Profundo, para examenes". The summary must be profound, comprehensive, and detailed, suitable for exam preparation or in-depth study. It must include specifics about methodologies, data points, results, limitations, and clinical implications. Complex concepts must be explained thoroughly. The target audience is a professional or student who needs to master the subject matter.';
-            break;
-    }
-
+    const detailInstruction = 'The user has selected: "Profundo, para examenes". The summary must be profound, comprehensive, and detailed, suitable for exam preparation or in-depth study. It must include specifics about methodologies, data points, results, limitations, and clinical implications. Complex concepts must be explained thoroughly. The target audience is a professional or student who needs to master the subject matter.';
+    
     const model = 'gemini-2.5-pro';
     const prompt = `
         You are "Medic Papers Boost CS", an expert medical document processing and educational gamification assistant. Your purpose is to transform dense medical documents into three distinct, high-quality outputs: a Summary, an Assessment Quiz, and a set of Flashcards.
@@ -239,57 +243,59 @@ const AiThinkingProcess: React.FC = () => {
                 if (prevStep < analysisSteps.length - 1) {
                     return prevStep + 1;
                 }
-                // Optional: loop the animation for long waits
-                // return 0; 
                 return prevStep;
             });
-        }, 1800); // Progress every 1.8 seconds
+        }, 1800); 
 
         return () => clearInterval(interval);
     }, [analysisSteps.length]);
     
     const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>;
-    const ChevronDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>;
-    const ChevronUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>;
+    const ChevronDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transition-transform duration-300" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>;
 
     return (
-        <div className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-lg border border-gray-200">
-            <div className="flex justify-between items-center cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
-                <h3 className="text-lg font-semibold text-gray-800">AI Analyzing Document...</h3>
-                <button aria-label="Toggle process view" className="text-gray-500 hover:text-gray-800">
-                    {isCollapsed ? <ChevronDownIcon /> : <ChevronUpIcon />}
-                </button>
+        <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto border border-blue-100">
+            <div className="flex items-center justify-center text-center flex-col">
+                <LoadingSpinner className="h-12 w-12" />
+                <h2 className="text-2xl font-bold text-gray-800 mt-4">AI Analyzing Document...</h2>
+                <p className="text-gray-600 mt-1">This may take a moment. The AI is preparing your study materials.</p>
             </div>
             
-            {!isCollapsed && (
-                <div className="mt-4 space-y-3 overflow-hidden">
-                    <p className="text-sm text-gray-600 mb-4">You can see the process of how the AI performs the summary, to make waiting less tedious.</p>
-                    <ul className="space-y-3">
-                        {analysisSteps.map((step, index) => {
-                            const isCompleted = index < currentStep;
-                            const isCurrent = index === currentStep;
-                            
-                            return (
-                                <li key={index} className="flex items-center gap-3 text-sm">
-                                    <div className="flex-shrink-0 h-5 w-5 flex items-center justify-center">
-                                        {isCompleted ? <CheckIcon /> : isCurrent ? <LoadingSpinner className="h-4 w-4" /> : <div className="h-4 w-4 border border-gray-300 rounded-full bg-gray-100" />}
+            <div className="mt-6 border-t pt-4">
+                <button 
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className="w-full flex justify-between items-center text-left font-semibold text-gray-700 hover:text-blue-600 focus:outline-none"
+                    aria-expanded={!isCollapsed}
+                >
+                    <span>AI Thinking Process</span>
+                    <ChevronDownIcon />
+                </button>
+                {!isCollapsed && (
+                     <ul className="mt-4 space-y-3">
+                        {analysisSteps.map((step, index) => (
+                            <li key={index} className={`flex items-center transition-all duration-300 ${index <= currentStep ? 'opacity-100' : 'opacity-40'}`}>
+                                {index < currentStep ? (
+                                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center mr-3">
+                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                                     </div>
-                                    <span className={`${
-                                        isCompleted ? 'text-gray-500 line-through' : 
-                                        isCurrent ? 'text-blue-600 font-semibold' : 'text-gray-700'
-                                    }`}>
-                                        {step}
-                                    </span>
-                                </li>
-                            );
-                        })}
+                                ) : index === currentStep ? (
+                                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center mr-3 animate-pulse">
+                                       <LoadingSpinner className="h-4 w-4 text-white"/>
+                                    </div>
+                                ) : (
+                                    <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 mr-3"></div>
+                                )}
+                                <span className={`text-sm ${index === currentStep ? 'font-bold text-blue-700' : 'text-gray-600'}`}>
+                                    {step}
+                                </span>
+                            </li>
+                        ))}
                     </ul>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };
-
 
 // --- components/Home.tsx ---
 const FeatureIcon1 = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
@@ -320,7 +326,7 @@ const FileUpload: React.FC<{ onFileUpload: (file: File) => void; isLoading: bool
   return (
     <div className="bg-white p-8 rounded-lg shadow-lg text-center">
       <h2 className="text-2xl font-bold text-gray-800 mb-2">Upload Your Medical Document</h2>
-      <p className="text-gray-600 mb-6">Drag and drop a text-based PDF file or click to select one. Scanned documents are not supported.</p>
+      <p className="text-gray-600 mb-6">Drag and drop a PDF file or click to select one.</p>
       <div onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop} className={`relative block w-full border-2 ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} border-dashed rounded-lg p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}>
         <UploadIcon /><span className="mt-2 block text-sm font-medium text-gray-900">Drag and drop your PDF here</span><span className="text-xs text-gray-500">or</span>
         <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
@@ -330,47 +336,6 @@ const FileUpload: React.FC<{ onFileUpload: (file: File) => void; isLoading: bool
     </div>
   );
 };
-
-// --- components/SummaryDetailSelector.tsx ---
-type DetailLevel = 'simple' | 'concrete' | 'deep';
-const DetailOptionIconSimple = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.553L16.5 21.75l-.398-1.197a3.375 3.375 0 00-2.456-2.456L12.75 18l1.197-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.197a3.375 3.375 0 002.456 2.456L20.25 18l-1.197.398a3.375 3.375 0 00-2.456 2.456z" /></svg>;
-const DetailOptionIconConcrete = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.75h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5M21 4.5H3a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 003 19.5h18a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0021 4.5z" /></svg>;
-const DetailOptionIconDeep = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5M20.25 21.75l-2.25-2.25m0 0l-2.25 2.25m2.25-2.25V15m-4.5-5.25l-2.25-2.25m0 0l-2.25 2.25m2.25-2.25V3" /></svg>;
-
-const SummaryDetailSelector: React.FC<{
-    fileName: string;
-    detail: DetailLevel;
-    setDetail: (detail: DetailLevel) => void;
-    onStartAnalysis: () => void;
-}> = ({ fileName, detail, setDetail, onStartAnalysis }) => {
-    const options = [
-        { id: 'simple', icon: <DetailOptionIconSimple />, title: 'Simple', description: 'Para tener idea del tema' },
-        { id: 'concrete', icon: <DetailOptionIconConcrete />, title: 'Concreto', description: 'Tener conceptos fundamentales' },
-        { id: 'deep', icon: <DetailOptionIconDeep />, title: 'Profundo', description: 'Para examenes' },
-    ];
-    return (
-        <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Configurar Análisis</h2>
-            <p className="text-gray-600 mb-1">Archivo: <span className="font-medium text-gray-800">{fileName}</span></p>
-            <p className="text-gray-600 mb-8">Elige qué tan detallado quieres que sea el resumen.</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                {options.map(opt => (
-                    <button key={opt.id} onClick={() => setDetail(opt.id as DetailLevel)} className={`p-6 border-2 rounded-lg text-center transition-all duration-200 ${detail === opt.id ? 'border-blue-500 bg-blue-50 shadow-lg scale-105' : 'border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50'}`}>
-                        <div className="mx-auto w-fit mb-3">{opt.icon}</div>
-                        <h3 className="font-semibold text-lg text-gray-800">{opt.title}</h3>
-                        <p className="text-sm text-gray-500">{opt.description}</p>
-                    </button>
-                ))}
-            </div>
-
-            <button onClick={onStartAnalysis} className="w-full sm:w-auto px-10 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-105 transition-transform">
-                Generar Análisis
-            </button>
-        </div>
-    );
-};
-
 
 // --- components/SummaryView.tsx ---
 const PrintIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>;
@@ -386,7 +351,7 @@ const SummaryView: React.FC<{ htmlContent: string; fileName: string; }> = ({ htm
 // --- components/QuizView.tsx ---
 interface SavedQuizState { quizTitle: string; activeQuestions: Question[]; currentQuestionIndex: number; score: number; userAnswers: (number | null)[]; numQuestions: number; }
 const LOCAL_STORAGE_KEY = 'medicPapersBoostQuizProgress';
-const CheckIcon = () => <svg className="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>;
+const CheckIconQV = () => <svg className="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>;
 const XIcon = () => <svg className="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.607a1 1 0 010-1.314z" clipRule="evenodd" /></svg>;
 const DownloadIconQV = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>;
 const QuizView: React.FC<{ quizData: Quiz; fileName: string; }> = ({ quizData, fileName }) => {
@@ -483,7 +448,7 @@ const QuizView: React.FC<{ quizData: Quiz; fileName: string; }> = ({ quizData, f
   }
   
   if (quizFinished) { const correctAnswers = userAnswers.filter((answer, index) => answer === activeQuestions[index].correctAnswerIndex).length; const percentageScore = Math.round((correctAnswers / activeQuestions.length) * 100); const passed = percentageScore >= 90; const incorrectQuestions = activeQuestions.filter((q, index) => userAnswers[index] !== null && userAnswers[index] !== q.correctAnswerIndex); const topicsToReview = [...new Set(incorrectQuestions.map(q => q.topic))]; return ( <div className="text-center p-8 bg-white rounded-lg shadow-md"><h2 className="text-3xl font-bold text-gray-800">Quiz Completed!</h2><div className={`mt-6 p-6 rounded-lg ${passed ? 'bg-green-50' : 'bg-red-50'}`}><p className="text-lg">Your final score</p><p className={`mt-2 text-6xl font-bold ${passed ? 'text-green-600' : 'text-red-600'}`}>{percentageScore}%</p><p>({correctAnswers} out of {activeQuestions.length} correct)</p>{passed ? <p className="mt-4 font-semibold text-green-700">Congratulations!</p> : <p className="mt-4 font-semibold text-red-700">Review the topics below.</p>}</div>{!passed && topicsToReview.length > 0 && (<div className="mt-8 text-left p-6 bg-yellow-50 border-l-4 border-yellow-400"><h3 className="text-xl font-bold">Areas for Review</h3><ul className="list-disc list-inside mt-4">{topicsToReview.map((topic, index) => <li key={index}>{topic}</li>)}</ul></div>)}<div className="mt-10 flex gap-4 justify-center"><button onClick={handleRestartQuiz} className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg">Start New Quiz</button><button onClick={handleExportToDoc} className="inline-flex items-center px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg"><DownloadIconQV />Export for Forms (.doc)</button></div></div>); }
-  return ( <div className="max-w-4xl mx-auto"><div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold">{quizData.quizTitle}</h2><p className="text-lg font-semibold text-blue-600">Score: {score}</p></div><div className="w-full bg-gray-200 rounded-full h-2.5 mb-4"><div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div></div><p className="text-sm text-gray-500 text-right mb-4">Question {currentQuestionIndex + 1} of {activeQuestions.length}</p><div className="bg-white p-6 rounded-lg shadow"><p className="text-lg font-semibold mb-4">{currentQuestion.questionText}</p><div className="space-y-3">{currentQuestion.options.map((option, index) => (<button key={index} onClick={() => handleAnswerSelect(index)} disabled={isAnswered} className={`w-full text-left p-4 border rounded-lg flex items-center justify-between transition-all duration-300 ${getOptionClass(index)}`}><span>{option}</span>{isAnswered && (<span className={`flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center ${index === currentQuestion.correctAnswerIndex ? 'bg-green-500' : 'bg-red-500'}`}>{index === currentQuestion.correctAnswerIndex ? <CheckIcon /> : <XIcon />}</span>)}</button>))}</div>{showExplanation && (<div className="mt-6 p-4 bg-yellow-50 border-l-4 border-yellow-400"><h4 className="font-bold">Explanation</h4><p>{currentQuestion.explanation}</p><div className="mt-6 text-right"><button onClick={handleNextQuestion} className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg">{currentQuestionIndex < activeQuestions.length - 1 ? 'Next Question' : 'Finish Quiz'}</button></div></div>)}</div></div>);
+  return ( <div className="max-w-4xl mx-auto"><div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold">{quizData.quizTitle}</h2><p className="text-lg font-semibold text-blue-600">Score: {score}</p></div><div className="w-full bg-gray-200 rounded-full h-2.5 mb-4"><div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div></div><p className="text-sm text-gray-500 text-right mb-4">Question {currentQuestionIndex + 1} of {activeQuestions.length}</p><div className="bg-white p-6 rounded-lg shadow"><p className="text-lg font-semibold mb-4">{currentQuestion.questionText}</p><div className="space-y-3">{currentQuestion.options.map((option, index) => (<button key={index} onClick={() => handleAnswerSelect(index)} disabled={isAnswered} className={`w-full text-left p-4 border rounded-lg flex items-center justify-between transition-all duration-300 ${getOptionClass(index)}`}><span>{option}</span>{isAnswered && (<span className={`flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center ${index === currentQuestion.correctAnswerIndex ? 'bg-green-500' : 'bg-red-500'}`}>{index === currentQuestion.correctAnswerIndex ? <CheckIconQV /> : <XIcon />}</span>)}</button>))}</div>{showExplanation && (<div className="mt-6 p-4 bg-yellow-50 border-l-4 border-yellow-400"><h4 className="font-bold">Explanation</h4><p>{currentQuestion.explanation}</p><div className="mt-6 text-right"><button onClick={handleNextQuestion} className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg">{currentQuestionIndex < activeQuestions.length - 1 ? 'Next Question' : 'Finish Quiz'}</button></div></div>)}</div></div>);
 };
 
 // --- components/FlashcardsView.tsx ---
@@ -564,9 +529,9 @@ const FlashcardsView: React.FC<{ flashcards: Flashcard[]; fileName: string; }> =
   const currentCard = activeFlashcards[currentIndex];
   return (
     <div className="max-w-2xl mx-auto flex flex-col items-center">
-      <style>{`.perspective{perspective:1500px}.card{transform-style:preserve-3d;transition:transform .6s;cursor:pointer}.card.is-flipped{transform:rotateY(180deg)}.card-face{position:absolute;width:100%;height:100%;-webkit-backface-visibility:hidden;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;padding:1.5rem;text-align:center;border-radius:.75rem}.card-face-front{background:#fff;border:1px solid #e5e7eb}.card-face-back{transform:rotateY(180deg);background:#f0f9ff;border:1px solid #bae6fd}`}</style>
-      {activeFlashcards.length > 0 ? (<><div className="w-full h-72 md:h-80 perspective"><div className={`relative w-full h-full card ${isFlipped ? 'is-flipped' : ''}`} onClick={() => setIsFlipped(!isFlipped)}><div className="card-face card-face-front"><h3 className="text-2xl font-bold">{currentCard.term}</h3></div><div className="card-face card-face-back"><p className="text-lg">{currentCard.definition}</p></div></div></div><p className="text-sm text-gray-500 mt-4">Click card to flip (or press spacebar)</p><div className="flex items-center justify-between w-full mt-6 text-gray-800"><button onClick={handlePrev} disabled={currentIndex === 0} className="p-3 rounded-full bg-gray-200 disabled:opacity-50"><ArrowLeftIcon /></button><p>{currentIndex + 1} / {activeFlashcards.length}</p><button onClick={handleNext} disabled={currentIndex === activeFlashcards.length - 1} className="p-3 rounded-full bg-gray-200 disabled:opacity-50"><ArrowRightIcon /></button></div>
-      <div className="mt-8 pt-6 border-t w-full flex justify-center items-center gap-4 border-gray-200">
+      <style>{`.perspective{perspective:1500px}.card{transform-style:preserve-3d;transition:transform .6s;cursor:pointer}.card.is-flipped{transform:rotateY(180deg)}.card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;padding:1.5rem;text-align:center;border-radius:.75rem}.card-face-front{background:#fff;border:1px solid #e5e7eb}.card-face-back{transform:rotateY(180deg);background:#f0f9ff;border:1px solid #bae6fd}`}</style>
+      {activeFlashcards.length > 0 ? (<><div className="w-full h-72 md:h-80 perspective"><div className={`relative w-full h-full card ${isFlipped ? 'is-flipped' : ''}`} onClick={() => setIsFlipped(!isFlipped)}><div className="card-face card-face-front"><h3 className="text-2xl font-bold">{currentCard.term}</h3></div><div className="card-face card-face-back"><p className="text-lg">{currentCard.definition}</p></div></div></div><p className="text-sm text-gray-500 mt-4">Click card to flip (or press spacebar)</p><div className="flex items-center justify-between w-full mt-6"><button onClick={handlePrev} disabled={currentIndex === 0} className="p-3 rounded-full bg-gray-200 disabled:opacity-50"><ArrowLeftIcon /></button><p>{currentIndex + 1} / {activeFlashcards.length}</p><button onClick={handleNext} disabled={currentIndex === activeFlashcards.length - 1} className="p-3 rounded-full bg-gray-200 disabled:opacity-50"><ArrowRightIcon /></button></div>
+      <div className="mt-8 pt-6 border-t w-full flex justify-center items-center gap-4">
         <button onClick={handleRestart} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md">Change Settings</button>
         <button onClick={handleExportCsv} className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md"><DownloadIconFV />Export Filtered to CSV</button>
       </div>
@@ -596,15 +561,36 @@ const LibraryView: React.FC<{ library: SavedArticle[]; onViewArticle: (article: 
 type View = 'summary' | 'quiz' | 'flashcards';
 type AppState = 'home' | 'analysis' | 'library';
 
-const Header: React.FC<{ onViewLibrary: () => void; }> = ({ onViewLibrary }) => (
-  <header className="bg-white shadow-sm"><div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex items-center justify-between"><div className="flex items-center space-x-3"><div className="bg-blue-600 p-2 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div><h1 className="text-2xl font-bold text-gray-900">Medic Papers Boost CS</h1></div><div className="flex items-center gap-4"><button onClick={onViewLibrary} className="px-4 py-2 bg-blue-100 text-blue-700 font-semibold rounded-lg hover:bg-blue-200 text-sm">My Library</button>
-  </div></div></header>
+const Header: React.FC<{ onViewLibrary: () => void; onGoHome: () => void; appState: AppState; }> = ({ onViewLibrary, onGoHome, appState }) => (
+  <header className="bg-white shadow-sm">
+      <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          <button onClick={onGoHome} className="flex items-center space-x-3">
+              <div className="bg-blue-600 p-2 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Medic Papers Boost CS</h1>
+          </button>
+          <div className="flex items-center gap-4">
+              {appState !== 'library' && (
+                  <button
+                      onClick={onViewLibrary}
+                      className="px-4 py-2 bg-blue-100 text-blue-700 font-semibold rounded-lg hover:bg-blue-200 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                      My Library
+                  </button>
+              )}
+          </div>
+      </div>
+  </header>
 );
+
 const PRESET_SPECIALTIES = ["Medicina Interna", "Cardiologia", "Pediatria", "Ginecologia", "Cirugia General"];
 const SaveToLibraryForm: React.FC<{ onSave: (specialty: string) => void }> = ({ onSave }) => {
     const [selectedSpecialty, setSelectedSpecialty] = useState(PRESET_SPECIALTIES[0]); const [customSpecialty, setCustomSpecialty] = useState('');
     const handleSave = () => { const s = selectedSpecialty === 'Other' ? customSpecialty.trim() : selectedSpecialty; if (s) onSave(s); else alert('Please enter a custom specialty name.'); };
-    return (<div className="p-4 bg-blue-50 border border-blue-200 rounded-lg"><h3 className="font-semibold">Save to Library</h3><p className="text-sm text-gray-600 mb-3">Organize this analysis by assigning it to a specialty.</p><div className="flex flex-col sm:flex-row gap-2 items-center"><select value={selectedSpecialty} onChange={(e) => setSelectedSpecialty(e.target.value)} className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900">{PRESET_SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}<option value="Other">Create New...</option></select>{selectedSpecialty === 'Other' && (<input type="text" value={customSpecialty} onChange={(e) => setCustomSpecialty(e.target.value)} placeholder="New specialty name" className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900" />)}<button onClick={handleSave} className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Save</button></div></div>);
+    return (<div className="p-4 bg-blue-50 border border-blue-200 rounded-lg"><h3 className="font-semibold">Save to Library</h3><p className="text-sm text-gray-600 mb-3">Organize this analysis by assigning it to a specialty.</p><div className="flex flex-col sm:flex-row gap-2 items-center"><select value={selectedSpecialty} onChange={(e) => setSelectedSpecialty(e.target.value)} className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md">{PRESET_SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}<option value="Other">Create New...</option></select>{selectedSpecialty === 'Other' && (<input type="text" value={customSpecialty} onChange={(e) => setCustomSpecialty(e.target.value)} placeholder="New specialty name" className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md" />)}<button onClick={handleSave} className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Save</button></div></div>);
 };
 function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -615,151 +601,82 @@ function App() {
   const [appState, setAppState] = useState<AppState>('home');
   const [library, setLibrary] = useState<SavedArticle[]>([]);
   const [isCurrentArticleSaved, setIsCurrentArticleSaved] = useState<boolean>(false);
-  
+  const API_KEY_STORAGE_KEY = 'gemini_api_key';
+
   const [apiKeySelected, setApiKeySelected] = useState(false);
   const [isCheckingApiKey, setIsCheckingApiKey] = useState(true);
-  const [isAiStudio, setIsAiStudio] = useState(false);
-  const [manualApiKey, setManualApiKey] = useState('');
-  
-  const [summaryDetail, setSummaryDetail] = useState<DetailLevel>('concrete');
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   useEffect(() => { setLibrary(getLibrary()); }, []);
 
-  useEffect(() => {
+   useEffect(() => {
     const checkApiKey = async () => {
       setIsCheckingApiKey(true);
-      const isStudio = typeof window.aistudio?.hasSelectedApiKey === 'function';
-      setIsAiStudio(isStudio);
-
-      if (isStudio) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        setApiKeySelected(hasKey);
-      } else {
-        // Non-AI Studio environment. Check sessionStorage.
-        const storedKey = sessionStorage.getItem('gemini_api_key');
-        if (storedKey) {
-          if (window.process?.env) {
-            window.process.env.API_KEY = storedKey;
-          }
-          setApiKeySelected(true);
-        } else {
-          setApiKeySelected(false);
+      const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
+      if (storedKey) {
+        if (window.process?.env) {
+          window.process.env.API_KEY = storedKey;
         }
+        setApiKeySelected(true);
+      } else {
+        setApiKeySelected(false);
       }
       setIsCheckingApiKey(false);
     };
     checkApiKey();
   }, []);
 
-  const handleSelectApiKey = async () => {
-    if (isAiStudio && typeof window.aistudio?.openSelectKey === 'function') {
-      await window.aistudio.openSelectKey();
-      setApiKeySelected(true); // Assume success after dialog
-    }
-  };
-
-  const handleSaveManualKey = () => {
-    const key = manualApiKey.trim();
+  const handleSaveApiKey = (key: string) => {
     if (key) {
-        sessionStorage.setItem('gemini_api_key', key);
+        localStorage.setItem(API_KEY_STORAGE_KEY, key);
         if (window.process?.env) {
             window.process.env.API_KEY = key;
         }
         setApiKeySelected(true);
-    } else {
-        alert('Please enter a valid API Key.');
     }
   };
-
+  
   const extractTextFromPdf = async (file: File): Promise<string> => {
     const arrayBuffer = await file.arrayBuffer();
-    // Using disableFontFace can improve performance when fonts are not needed for rendering.
-    const pdf = await pdfjsLib.getDocument({data: arrayBuffer, disableFontFace: true}).promise;
+    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
     let fullText = '';
-
-    // Fix: A structured type for a text item from pdf.js is defined to satisfy TypeScript's
-    // type predicate requirements, as the original TextItem type is not exported.
-    type PdfTextItem = {
-        str: string;
-        dir: string;
-        width: number;
-        height: number;
-        transform: number[];
-        fontName: string;
-        hasEOL: boolean;
-    };
-
-
     for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        
-        if (!textContent.items || textContent.items.length === 0) {
-            continue;
-        }
-
-        let lastY: number | null = null;
-        let pageText = '';
-        
-        // Sort items by reading order (top-to-bottom, then left-to-right)
-        const items = textContent.items.filter((item): item is PdfTextItem => 'str' in item);
-        items.sort((a, b) => {
-            if (a.transform[5] !== b.transform[5]) {
-                return b.transform[5] - a.transform[5]; // Y-coordinate, top to bottom
-            }
-            return a.transform[4] - b.transform[4]; // X-coordinate, left to right
-        });
-
-        for (const item of items) {
-            if (lastY !== null && Math.abs(lastY - item.transform[5]) > 5) { // Heuristic for a new line
-                pageText += '\n';
-            }
-            pageText += item.str;
-            lastY = item.transform[5];
-        }
-        fullText += pageText + '\n\n';
+        // Use the type guard to filter and correctly type the items
+        fullText += textContent.items
+            .filter(isPdfTextItem)
+            .map(item => item.str)
+            .join(' ') + '\n\n';
     }
-    
-    // Final cleanup: remove hyphenation at line breaks and normalize whitespace.
-    return fullText.replace(/-\s*\n/g, '').replace(/\s+/g, ' ').trim();
+    // Post-process the text to clean it up
+    let processedText = fullText.replace(/-\s*\n\n\s*/g, ''); // Re-join hyphenated words
+    processedText = processedText.replace(/[ \t]+/g, ' ').trim(); // Consolidate whitespace
+    return processedText;
   };
   
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file) return;
+    setIsLoading(true);
     setError(null);
     setAnalysisResult(null);
     setIsCurrentArticleSaved(false);
     setFileName(file.name);
-    setPendingFile(file); // Set the file for the configuration step
     setAppState('analysis');
-  }, []);
-
-  const handleStartAnalysis = useCallback(async () => {
-    if (!pendingFile) return;
-
-    setIsLoading(true);
-    setError(null);
-    const fileToProcess = pendingFile;
-    setPendingFile(null); // Clear pending file, analysis is starting
-
     try {
-      const pdfText = await extractTextFromPdf(fileToProcess);
-      if (pdfText.trim().length === 0) {
-        throw new Error("Could not extract text from the PDF. The document might be image-based (a scan), empty, or corrupted. Please try a different, text-based PDF.");
-      }
-      const result = await generateMedicalAnalysis(pdfText, summaryDetail);
+      const pdfText = await extractTextFromPdf(file);
+      if (pdfText.trim().length === 0) throw new Error("Could not extract text from the PDF. The document might be image-based or empty.");
+      const result = await generateMedicalAnalysis(pdfText);
       setAnalysisResult(result);
       setCurrentView('summary');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
       console.error(err);
-      if (errorMessage.includes("API Key not found") || errorMessage.includes("API key not valid")) {
-          sessionStorage.removeItem('gemini_api_key');
+      if (errorMessage.includes("API Key not found") || errorMessage.includes("The provided API Key is not valid")) {
+          localStorage.removeItem(API_KEY_STORAGE_KEY);
           if (window.process?.env) {
               delete window.process.env.API_KEY;
           }
-          setError(`There was an issue with the API Key: "${errorMessage}". Please enter or select a valid key and try again.`);
+          setError(`There was an issue with the API Key. Please enter a valid key and try again. Error: "${errorMessage}"`);
           setApiKeySelected(false);
           setAppState('home');
       } else {
@@ -768,75 +685,81 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [pendingFile, summaryDetail]);
+  }, []);
   
-  const handleResetToHome = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setPendingFile(null); setAppState('home'); }
-  const handleStartNewAnalysis = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setPendingFile(null); setAppState('analysis'); }
+  const handleResetToHome = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setAppState('home'); }
+  const handleStartNewAnalysis = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setAppState('analysis'); }
   const handleViewLibrary = () => setAppState('library');
-  const handleViewSavedArticle = (article: SavedArticle) => { setAnalysisResult(article.analysisResult); setFileName(article.fileName); setIsCurrentArticleSaved(true); setCurrentView('summary'); setPendingFile(null); setAppState('analysis'); };
+  const handleViewSavedArticle = (article: SavedArticle) => { setAnalysisResult(article.analysisResult); setFileName(article.fileName); setIsCurrentArticleSaved(true); setCurrentView('summary'); setAppState('analysis'); };
   const handleSaveToLibrary = (specialty: string) => { if (analysisResult && fileName) { const updatedLibrary = saveArticle(fileName, specialty, analysisResult); setLibrary(updatedLibrary); setIsCurrentArticleSaved(true); } };
-  const handleDeleteArticle = (articleId: string) => { if (window.confirm('Are you sure?')) { setLibrary(deleteArticle(articleId)); } };
+  const handleDeleteArticle = (articleId: string) => { if (window.confirm('Are you sure you want to permanently delete this analysis?')) { setLibrary(deleteArticle(articleId)); } };
   
-  const renderAnalysisView = () => { 
-    if (isLoading) { return <AiThinkingProcess />; } 
-    if (error) { return <div className="text-center p-10 bg-red-50"><p className="text-red-700 font-semibold">An Error Occurred</p><p className="mt-2 text-red-600">{error}</p><button onClick={handleStartNewAnalysis} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">Try Again</button></div>; } 
-    if (analysisResult) { return (<div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg print-reset-layout"><div className="flex justify-between items-center mb-6 border-b pb-4 no-print"><h2 className="text-2xl font-bold truncate pr-4" title={fileName}>{fileName}</h2><button onClick={handleStartNewAnalysis} className="flex-shrink-0 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm">Analyze New</button></div><div className="no-print">{!isCurrentArticleSaved ? (<div className="mb-6"><SaveToLibraryForm onSave={handleSaveToLibrary} /></div>) : (<div className="mb-6 p-4 bg-green-50 rounded-lg flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><p className="text-green-800">This analysis is saved in your library.</p></div>)}</div><div className="border-b border-gray-200 no-print"><nav className="-mb-px flex space-x-8"><button onClick={() => setCurrentView('summary')} className={`${currentView === 'summary' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Summary</button><button onClick={() => setCurrentView('quiz')} className={`${currentView === 'quiz' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Interactive Quiz</button><button onClick={() => setCurrentView('flashcards')} className={`${currentView === 'flashcards' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Flashcards</button></nav></div><div className="mt-6">{currentView === 'summary' && <SummaryView htmlContent={analysisResult.summary} fileName={fileName} />}{currentView === 'quiz' && <QuizView quizData={analysisResult.quiz} fileName={fileName} />}{currentView === 'flashcards' && <FlashcardsView flashcards={analysisResult.flashcards} fileName={fileName} />}</div></div>); } 
-    if (pendingFile) { return <SummaryDetailSelector fileName={fileName} detail={summaryDetail} setDetail={setSummaryDetail} onStartAnalysis={handleStartAnalysis} />; }
-    return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />; 
+  const renderAnalysisView = () => {
+    if (isLoading) { return <AiThinkingProcess />; }
+    if (error) { return <div className="text-center p-10 bg-red-50 border-l-4 border-red-400"><p className="text-red-700 font-semibold">An Error Occurred</p><p className="mt-2 text-red-600">{error}</p><button onClick={handleStartNewAnalysis} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Try Again</button></div>; }
+    if (analysisResult) { return (<div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg print-reset-layout"><div className="flex justify-between items-center mb-6 border-b pb-4 no-print"><h2 className="text-2xl font-bold truncate pr-4" title={fileName}>{fileName}</h2><button onClick={handleStartNewAnalysis} className="flex-shrink-0 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300 font-semibold">Analyze New</button></div><div className="no-print">{!isCurrentArticleSaved ? (<div className="mb-6"><SaveToLibraryForm onSave={handleSaveToLibrary} /></div>) : (<div className="mb-6 p-4 bg-green-50 rounded-lg flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><p className="text-green-800 font-medium">This analysis is saved in your library.</p></div>)}</div><div className="border-b border-gray-200 no-print"><nav className="-mb-px flex space-x-8"><button onClick={() => setCurrentView('summary')} className={`${currentView === 'summary' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300'} py-4 px-1 border-b-2 font-medium text-sm`}>Summary</button><button onClick={() => setCurrentView('quiz')} className={`${currentView === 'quiz' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300'} py-4 px-1 border-b-2 font-medium text-sm`}>Interactive Quiz</button><button onClick={() => setCurrentView('flashcards')} className={`${currentView === 'flashcards' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300'} py-4 px-1 border-b-2 font-medium text-sm`}>Flashcards</button></nav></div><div className="mt-6">{currentView === 'summary' && <SummaryView htmlContent={analysisResult.summary} fileName={fileName} />}{currentView === 'quiz' && <QuizView quizData={analysisResult.quiz} fileName={fileName} />}{currentView === 'flashcards' && <FlashcardsView flashcards={analysisResult.flashcards} fileName={fileName} />}</div></div>); }
+    return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />;
   };
   
+  const ApiKeyInput: React.FC<{ onSave: (key: string) => void }> = ({ onSave }) => {
+    const [key, setKey] = useState('');
+    return (
+        <div className="max-w-xl mx-auto text-center p-8 bg-white rounded-lg shadow-md mt-10">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">API Key Required</h2>
+            <p className="text-gray-600 mb-6">Please enter your Google AI Studio API key to continue. Your key is stored securely in your browser's local storage.</p>
+            <form onSubmit={(e) => { e.preventDefault(); onSave(key.trim()); }} className="flex flex-col sm:flex-row gap-2">
+                <input 
+                    type="password" 
+                    value={key} 
+                    onChange={(e) => setKey(e.target.value)} 
+                    placeholder="Enter your API Key"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    aria-label="API Key Input"
+                />
+                <button 
+                    type="submit"
+                    className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+                >
+                    Save Key
+                </button>
+            </form>
+            <p className="text-xs text-gray-500 mt-4">
+                You can get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.
+            </p>
+        </div>
+    );
+  };
+    
   const renderContent = () => {
-    if (isCheckingApiKey) {
-        return <div className="text-center p-10"><LoadingSpinner className="h-10 w-10 mx-auto" /><p className="mt-4">Checking API Key...</p></div>;
-    }
-
-    if (!apiKeySelected) {
-        if (isAiStudio) {
-            return (
-                <div className="max-w-xl mx-auto text-center p-8 bg-white rounded-lg shadow-md mt-10">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-4">API Key Required</h2>
-                    <p className="text-gray-600 mb-6">To use this application, you need to select a Google AI Studio API key. Your key is used only for this session and is not stored.</p>
-                    <button onClick={handleSelectApiKey} className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
-                        Select API Key
-                    </button>
-                    <p className="text-xs text-gray-500 mt-4">
-                        For information on billing, please visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ai.google.dev/gemini-api/docs/billing</a>.
-                    </p>
-                </div>
-            );
-        } else {
-             return (
-                <div className="max-w-xl mx-auto text-center p-8 bg-white rounded-lg shadow-md mt-10">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-4">API Key Required</h2>
-                    <p className="text-gray-600 mb-6">Please enter your Google AI Studio API key to continue. Your key is stored in your browser's session and is not sent anywhere else.</p>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <input 
-                            type="password" 
-                            value={manualApiKey} 
-                            onChange={(e) => setManualApiKey(e.target.value)} 
-                            placeholder="Enter your API Key"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
-                        />
-                        <button 
-                            onClick={handleSaveManualKey} 
-                            className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
-                        >
-                            Save Key
-                        </button>
-                    </div>
-                     <p className="text-xs text-gray-500 mt-4">
-                        You can get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2">
-                        For information on billing, please visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ai.google.dev/gemini-api/docs/billing</a>.
-                    </p>
-                </div>
-            );
-        }
-    }
+    if (isCheckingApiKey) { return <div className="text-center p-10"><LoadingSpinner className="h-10 w-10" /><p className="mt-4">Initializing...</p></div>; }
+    if (!apiKeySelected) { return <ApiKeyInput onSave={handleSaveApiKey} />; }
       
-    switch (appState) { case 'home': return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; case 'library': return <LibraryView library={library} onViewArticle={handleViewSavedArticle} onGoHome={handleResetToHome} onDeleteArticle={handleDeleteArticle} />; case 'analysis': return renderAnalysisView(); default: return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; } };
-  return (<div className="min-h-screen bg-gray-100"><div className="no-print"><Header onViewLibrary={handleViewLibrary} /></div><main><div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 print-reset-layout"><div className="px-4 py-6 sm:px-0 print-reset-layout">{renderContent()}</div></div></main></div>);
+    switch (appState) {
+        case 'home': return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />;
+        case 'library': return <LibraryView library={library} onViewArticle={handleViewSavedArticle} onGoHome={handleResetToHome} onDeleteArticle={handleDeleteArticle} />;
+        case 'analysis':
+            if (!analysisResult && !isLoading && !error) {
+                return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />;
+            }
+            return renderAnalysisView();
+        default: return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />;
+    }
+  };
+    
+  return (
+      <div className="min-h-screen bg-gray-100">
+          <div className="no-print">
+              <Header onViewLibrary={handleViewLibrary} onGoHome={handleResetToHome} appState={appState} />
+          </div>
+          <main>
+              <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 print-reset-layout">
+                  <div className="px-4 py-6 sm:px-0 print-reset-layout">
+                      {renderContent()}
+                  </div>
+              </div>
+          </main>
+      </div>
+  );
 }
 
 // --- Final Render Call ---
