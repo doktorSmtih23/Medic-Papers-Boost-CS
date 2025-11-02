@@ -169,11 +169,24 @@ async function generateMedicalAnalysis(pdfText: string, detailLevel: 'simple' | 
             **CRITICAL INSTRUCTION FOR SUMMARY DETAIL:** Based on the user's choice, generate the summary with the following level of detail: ${detailInstruction}.
             The summary's HTML MUST be visually engaging, professional, and well-structured.
             *   **A Self-Contained \`<style>\` Block (MANDATORY):**
-                *   The CSS must create a professional, modern, and fully responsive layout using a professional color palette (e.g., blues, grays) and the 'Inter' font.
-                *   **Styled Tables:** Tables must be styled for clarity, be responsive (scroll horizontally on small screens), and have distinct headers and alternating row colors. Every \`<table>\` must be wrapped in a scrollable container.
-                *   **Clinical Pearls:** Style \`<blockquote>\` elements as prominent callouts with a colored background and border to highlight key clinical advice.
-                *   **Key Takeaway Cards:** Style a \`.card-grid\` container as a responsive grid. Individual \`.card\` elements inside should be visually distinct with borders, shadows, and a hover effect.
-                *   **Section Headers:** Style \`<h2>\` headers for clear hierarchy with a larger font, bold weight, and a bottom border.
+                *   The CSS must create a professional, modern, and fully responsive layout. The base font should be 'Inter', sans-serif.
+                *   **CSS Variables for Theming (CRITICAL):** Define CSS variables for ALL colors in a \`:root\` selector for the light theme. Then, create a \`html.dark\` selector that re-defines these same variables for a dark theme. Style ALL elements using these variables (e.g., \`color: var(--text-color);\`). This ensures the summary's theme syncs with the main application.
+                *   **Example CSS Variables:**
+                    \`\`\`css
+                    :root {
+                        --bg-color: #ffffff; --text-color: #374151; --heading-color: #111827; --border-color: #e5e7eb;
+                        --card-bg: #ffffff; --blockquote-bg: #EFF6FF; --blockquote-border: #3B82F6; --table-header-bg: #f3f4f6;
+                    }
+                    html.dark {
+                        --bg-color: #111827; --text-color: #d1d5db; --heading-color: #f9fafb; --border-color: #374151;
+                        --card-bg: #1f2937; --blockquote-bg: #1e3a8a; --blockquote-border: #60a5fa; --table-header-bg: #374151;
+                    }
+                    body { background-color: var(--bg-color); color: var(--text-color); }
+                    \`\`\`
+                *   **Styled Tables:** Tables must be styled for clarity, be responsive (scroll horizontally on small screens), and have distinct headers and alternating row colors, using the CSS variables. Every \`<table>\` must be wrapped in a scrollable container.
+                *   **Clinical Pearls:** Style \`<blockquote>\` elements as prominent callouts with a background and border to highlight key clinical advice, using the CSS variables.
+                *   **Key Takeaway Cards:** Style a \`.card-grid\` container as a responsive grid. Individual \`.card\` elements inside should be visually distinct with borders, shadows, and a hover effect, using the CSS variables.
+                *   **Section Headers:** Style \`<h2>\` headers for clear hierarchy with a larger font, bold weight, and a bottom border, using the CSS variables.
                 *   **Print Styles:** Include a \`@media print\` rule. CRITICALLY, this rule must include \`page-break-inside: avoid !important;\` for cards, sections, blockquotes, and table wrappers to prevent them from splitting across pages. Also, optimize for printing by removing backgrounds/shadows and using black text.
             *   **HTML Body Content (MANDATORY):**
                 *   **Structure:** Start with \`<h1>\` for the title. Use \`<section>\` for major topics, each starting with a styled \`<h2>\` that includes an inline SVG icon.
@@ -209,7 +222,7 @@ async function generateMedicalAnalysis(pdfText: string, detailLevel: 'simple' | 
 
 // --- components/LoadingSpinner.tsx ---
 const LoadingSpinner: React.FC = () => (
-  <svg className="animate-spin h-10 w-10 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+  <svg className="animate-spin h-10 w-10 text-blue-600 dark:text-blue-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
   </svg>
@@ -220,9 +233,9 @@ const FeatureIcon1 = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-
 const FeatureIcon2 = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>;
 const FeatureIcon3 = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>;
 const Home: React.FC<{ onGetStarted: () => void; onViewLibrary: () => void; }> = ({ onGetStarted, onViewLibrary }) => (
-    <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-        <div className="relative"><div className="absolute inset-0 bg-gray-100 mix-blend-multiply" /><div className="relative px-4 py-16 sm:px-6 sm:py-24 lg:py-32 lg:px-8"><h1 className="text-center text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl"><span className="block text-gray-900">Unlock Medical Insights</span><span className="block text-blue-600">Instantly.</span></h1><p className="mt-6 max-w-lg mx-auto text-center text-xl text-gray-600 sm:max-w-3xl">Medic Papers Boost CS transforms dense medical documents into clear summaries and interactive quizzes, helping you learn faster and retain more.</p><div className="mt-10 max-w-md mx-auto sm:max-w-lg sm:flex sm:justify-center gap-4"><button onClick={onGetStarted} className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 sm:w-auto">Analyze a Document</button><button onClick={onViewLibrary} className="w-full mt-4 sm:mt-0 flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-blue-700 bg-blue-100 hover:bg-blue-200 sm:w-auto">View My Library</button></div></div></div>
-        <div className="bg-gray-50 border-t border-gray-200 p-8"><div className="max-w-7xl mx-auto"><div className="grid grid-cols-1 gap-12 lg:grid-cols-3 lg:gap-8"><div className="text-center"><div className="flex items-center justify-center h-16 w-16 rounded-md bg-blue-100 text-white mx-auto"><FeatureIcon1 /></div><h3 className="mt-5 text-lg font-medium text-gray-900">AI-Powered Summaries</h3><p className="mt-2 text-base text-gray-500">Go from pages of text to scannable summaries with key takeaways, clinical pearls, and data tables in seconds.</p></div><div className="text-center"><div className="flex items-center justify-center h-16 w-16 rounded-md bg-blue-100 text-white mx-auto"><FeatureIcon2 /></div><h3 className="mt-5 text-lg font-medium text-gray-900">Interactive Learning</h3><p className="mt-2 text-base text-gray-500">Reinforce your knowledge with auto-generated quizzes based on the document's content, complete with scoring and explanations.</p></div><div className="text-center"><div className="flex items-center justify-center h-16 w-16 rounded-md bg-blue-100 text-white mx-auto"><FeatureIcon3 /></div><h3 className="mt-5 text-lg font-medium text-gray-900">Secure and Private</h3><p className="mt-2 text-base text-gray-500">Your documents are processed on the fly and never stored. Your privacy and data security are our top priority.</p></div></div></div></div>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+        <div className="relative"><div className="absolute inset-0 bg-gray-100 dark:bg-gray-900 mix-blend-multiply" /><div className="relative px-4 py-16 sm:px-6 sm:py-24 lg:py-32 lg:px-8"><h1 className="text-center text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl"><span className="block text-gray-900 dark:text-gray-100">Unlock Medical Insights</span><span className="block text-blue-600 dark:text-blue-400">Instantly.</span></h1><p className="mt-6 max-w-lg mx-auto text-center text-xl text-gray-600 dark:text-gray-300 sm:max-w-3xl">Medic Papers Boost CS transforms dense medical documents into clear summaries and interactive quizzes, helping you learn faster and retain more.</p><div className="mt-10 max-w-md mx-auto sm:max-w-lg sm:flex sm:justify-center gap-4"><button onClick={onGetStarted} className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 sm:w-auto">Analyze a Document</button><button onClick={onViewLibrary} className="w-full mt-4 sm:mt-0 flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 sm:w-auto">View My Library</button></div></div></div>
+        <div className="bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-8"><div className="max-w-7xl mx-auto"><div className="grid grid-cols-1 gap-12 lg:grid-cols-3 lg:gap-8"><div className="text-center"><div className="flex items-center justify-center h-16 w-16 rounded-md bg-blue-100 dark:bg-gray-700 text-white mx-auto"><FeatureIcon1 /></div><h3 className="mt-5 text-lg font-medium text-gray-900 dark:text-gray-100">AI-Powered Summaries</h3><p className="mt-2 text-base text-gray-500 dark:text-gray-400">Go from pages of text to scannable summaries with key takeaways, clinical pearls, and data tables in seconds.</p></div><div className="text-center"><div className="flex items-center justify-center h-16 w-16 rounded-md bg-blue-100 dark:bg-gray-700 text-white mx-auto"><FeatureIcon2 /></div><h3 className="mt-5 text-lg font-medium text-gray-900 dark:text-gray-100">Interactive Learning</h3><p className="mt-2 text-base text-gray-500 dark:text-gray-400">Reinforce your knowledge with auto-generated quizzes based on the document's content, complete with scoring and explanations.</p></div><div className="text-center"><div className="flex items-center justify-center h-16 w-16 rounded-md bg-blue-100 dark:bg-gray-700 text-white mx-auto"><FeatureIcon3 /></div><h3 className="mt-5 text-lg font-medium text-gray-900 dark:text-gray-100">Secure and Private</h3><p className="mt-2 text-base text-gray-500 dark:text-gray-400">Your documents are processed on the fly and never stored. Your privacy and data security are our top priority.</p></div></div></div></div>
     </div>
 );
 
@@ -242,24 +255,24 @@ const FileUpload: React.FC<{ onFileUpload: (file: File) => void; isLoading: bool
     const files = e.target.files; if (files && files.length > 0) { onFileUpload(files[0]); }
   };
   return (
-    <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">Upload Your Medical Document</h2>
-      <p className="text-gray-600 mb-6">Drag and drop a PDF file or click to select one.</p>
-      <div onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop} className={`relative block w-full border-2 ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} border-dashed rounded-lg p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}>
-        <UploadIcon /><span className="mt-2 block text-sm font-medium text-gray-900">Drag and drop your PDF here</span><span className="text-xs text-gray-500">or</span>
-        <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+    <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg text-center">
+      <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Upload Your Medical Document</h2>
+      <p className="text-gray-600 dark:text-gray-300 mb-6">Drag and drop a PDF file or click to select one.</p>
+      <div onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop} className={`relative block w-full border-2 ${isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600'} border-dashed rounded-lg p-12 text-center hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}>
+        <UploadIcon /><span className="mt-2 block text-sm font-medium text-gray-900 dark:text-gray-200">Drag and drop your PDF here</span><span className="text-xs text-gray-500 dark:text-gray-400">or</span>
+        <label htmlFor="file-upload" className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
           <span> browse files</span><input id="file-upload" name="file-upload" type="file" className="sr-only" accept=".pdf" onChange={handleFileChange} disabled={isLoading} />
         </label>
-      </div><p className="text-xs text-gray-500 mt-4">Your documents are processed securely and are not stored.</p>
+      </div><p className="text-xs text-gray-500 dark:text-gray-400 mt-4">Your documents are processed securely and are not stored.</p>
     </div>
   );
 };
 
 // --- components/SummaryDetailSelector.tsx ---
 type DetailLevel = 'simple' | 'concrete' | 'deep';
-const DetailOptionIconSimple = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.553L16.5 21.75l-.398-1.197a3.375 3.375 0 00-2.456-2.456L12.75 18l1.197-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.197a3.375 3.375 0 002.456 2.456L20.25 18l-1.197.398a3.375 3.375 0 00-2.456 2.456z" /></svg>;
-const DetailOptionIconConcrete = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.75h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5M21 4.5H3a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 003 19.5h18a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0021 4.5z" /></svg>;
-const DetailOptionIconDeep = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5M20.25 21.75l-2.25-2.25m0 0l-2.25 2.25m2.25-2.25V15m-4.5-5.25l-2.25-2.25m0 0l-2.25 2.25m2.25-2.25V3" /></svg>;
+const DetailOptionIconSimple = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.553L16.5 21.75l-.398-1.197a3.375 3.375 0 00-2.456-2.456L12.75 18l1.197-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.197a3.375 3.375 0 002.456 2.456L20.25 18l-1.197.398a3.375 3.375 0 00-2.456 2.456z" /></svg>;
+const DetailOptionIconConcrete = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.75h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5M21 4.5H3a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 003 19.5h18a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0021 4.5z" /></svg>;
+const DetailOptionIconDeep = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5M20.25 21.75l-2.25-2.25m0 0l-2.25 2.25m2.25-2.25V15m-4.5-5.25l-2.25-2.25m0 0l-2.25 2.25m2.25-2.25V3" /></svg>;
 
 const SummaryDetailSelector: React.FC<{
     fileName: string;
@@ -273,17 +286,17 @@ const SummaryDetailSelector: React.FC<{
         { id: 'deep', icon: <DetailOptionIconDeep />, title: 'Profundo', description: 'Para examenes' },
     ];
     return (
-        <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Configurar Análisis</h2>
-            <p className="text-gray-600 mb-1">Archivo: <span className="font-medium text-gray-800">{fileName}</span></p>
-            <p className="text-gray-600 mb-8">Elige qué tan detallado quieres que sea el resumen.</p>
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg text-center">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Configurar Análisis</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-1">Archivo: <span className="font-medium text-gray-800 dark:text-gray-100">{fileName}</span></p>
+            <p className="text-gray-600 dark:text-gray-300 mb-8">Elige qué tan detallado quieres que sea el resumen.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 {options.map(opt => (
-                    <button key={opt.id} onClick={() => setDetail(opt.id as DetailLevel)} className={`p-6 border-2 rounded-lg text-center transition-all duration-200 ${detail === opt.id ? 'border-blue-500 bg-blue-50 shadow-lg scale-105' : 'border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50'}`}>
+                    <button key={opt.id} onClick={() => setDetail(opt.id as DetailLevel)} className={`p-6 border-2 rounded-lg text-center transition-all duration-200 ${detail === opt.id ? 'border-blue-500 bg-blue-50 dark:bg-gray-700 shadow-lg scale-105' : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700/50'}`}>
                         <div className="mx-auto w-fit mb-3">{opt.icon}</div>
-                        <h3 className="font-semibold text-lg text-gray-800">{opt.title}</h3>
-                        <p className="text-sm text-gray-500">{opt.description}</p>
+                        <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-100">{opt.title}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{opt.description}</p>
                     </button>
                 ))}
             </div>
@@ -345,18 +358,18 @@ const QuizView: React.FC<{ quizData: Quiz; fileName: string; }> = ({ quizData, f
   const handleNextQuestion = () => { if (currentQuestionIndex < activeQuestions.length - 1) { setCurrentQuestionIndex(prev => prev + 1); setIsAnswered(false); setSelectedAnswerIndex(null); setShowExplanation(false); } else { setQuizFinished(true); localStorage.removeItem(LOCAL_STORAGE_KEY); } };
   const handleRestartQuiz = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setQuizStarted(false); setSavedProgress(null); setSelectedTopics(allTopics); };
   const handleExportToDoc = () => { if (!activeQuestions.length) return; let docContent = `Quiz: ${quizData.quizTitle}\n\n----------------------------------------\n\n`; activeQuestions.forEach((q, index) => { docContent += `${index + 1}. ${q.questionText}\n`; q.options.forEach((opt, i) => { docContent += `   ${String.fromCharCode(97 + i)}. ${opt}\n`; }); docContent += `\nCorrect Answer: ${q.options[q.correctAnswerIndex]}\nExplanation: ${q.explanation}\n----------------------------------------\n\n`; }); const sanitizedFileName = fileName.replace(/\.pdf$/i, '').replace(/[^a-z0-9]/gi, '_'); const exportFileName = `${sanitizedFileName} - Quiz.doc`; const bom = '\uFEFF'; const dataBlob = new Blob([bom + docContent], { type: 'application/msword;charset=utf-8' }); const url = window.URL.createObjectURL(dataBlob); const link = document.createElement('a'); link.href = url; link.download = exportFileName; document.body.appendChild(link); link.click(); document.body.removeChild(link); window.URL.revokeObjectURL(url); };
-  const getOptionClass = (index: number) => { if (!isAnswered) return "bg-white hover:bg-blue-50 border-gray-300 hover:border-blue-400 text-gray-900 transform hover:-translate-y-1 active:scale-[0.99]"; const isCorrect = index === currentQuestion.correctAnswerIndex; const isSelected = index === selectedAnswerIndex; if (isCorrect) return "bg-green-100 border-green-500 text-green-900 font-semibold transform scale-105 shadow-lg"; if (isSelected && !isCorrect) return "bg-red-100 border-red-500 text-red-900 font-semibold transform scale-105 shadow-lg"; return "bg-gray-50 border-gray-200 text-gray-500 opacity-60"; };
+  const getOptionClass = (index: number) => { if (!isAnswered) return "bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 hover:border-blue-400 text-gray-900 dark:text-gray-100 transform hover:-translate-y-1 active:scale-[0.99]"; const isCorrect = index === currentQuestion.correctAnswerIndex; const isSelected = index === selectedAnswerIndex; if (isCorrect) return "bg-green-100 dark:bg-green-900/50 border-green-500 text-green-900 dark:text-green-200 font-semibold transform scale-105 shadow-lg"; if (isSelected && !isCorrect) return "bg-red-100 dark:bg-red-900/50 border-red-500 text-red-900 dark:text-red-200 font-semibold transform scale-105 shadow-lg"; return "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 opacity-60"; };
   const progressPercentage = useMemo(() => (activeQuestions.length === 0 ? 0 : ((currentQuestionIndex + 1) / activeQuestions.length) * 100), [currentQuestionIndex, activeQuestions.length]);
   
   if (!quizStarted) {
     return (
-      <div className="max-w-4xl mx-auto text-center p-8 bg-gray-50 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">{quizData.quizTitle}</h2>
+      <div className="max-w-4xl mx-auto text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">{quizData.quizTitle}</h2>
         
         {savedProgress ? (
-            <div className="my-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
-                <h3 className="text-xl font-semibold text-blue-800">Welcome Back!</h3>
-                <p className="text-blue-700 mt-2">
+            <div className="my-8 p-6 bg-blue-50 dark:bg-gray-700 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <h3 className="text-xl font-semibold text-blue-800 dark:text-blue-200">Welcome Back!</h3>
+                <p className="text-blue-700 dark:text-blue-300 mt-2">
                     You have a quiz in progress with {savedProgress.numQuestions} questions. You were on question {savedProgress.currentQuestionIndex + 1}.
                 </p>
                 <div className="mt-6 flex flex-col sm:flex-row justify-center items-center gap-4">
@@ -366,35 +379,35 @@ const QuizView: React.FC<{ quizData: Quiz; fileName: string; }> = ({ quizData, f
             </div>
         ) : (
           <>
-            <p className="text-gray-600 mb-8">Ready to test your knowledge? Customize your quiz below.</p>
+            <p className="text-gray-600 dark:text-gray-300 mb-8">Ready to test your knowledge? Customize your quiz below.</p>
 
             <div className="max-w-xl mx-auto my-8 text-left">
-              <h3 className="text-lg font-medium text-gray-700 mb-3">Filter by Topic</h3>
+              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-3">Filter by Topic</h3>
               <div className="flex flex-wrap gap-2 mb-4">
                 {allTopics.map(topic => (
-                  <button key={topic} onClick={() => handleTopicToggle(topic)} className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${selectedTopics.includes(topic) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+                  <button key={topic} onClick={() => handleTopicToggle(topic)} className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${selectedTopics.includes(topic) ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500'}`}>
                     {topic}
                   </button>
                 ))}
               </div>
               <div className="flex gap-4">
-                  <button onClick={handleSelectAllTopics} className="text-sm text-blue-600 hover:underline">Select All</button>
-                  <button onClick={handleDeselectAllTopics} className="text-sm text-blue-600 hover:underline">Deselect All</button>
+                  <button onClick={handleSelectAllTopics} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">Select All</button>
+                  <button onClick={handleDeselectAllTopics} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">Deselect All</button>
               </div>
             </div>
 
             <div className="max-w-md mx-auto">
-              <label htmlFor="numQuestions" className="block text-lg font-medium text-gray-700">Number of Questions ({maxQuestionsAvailable} available)</label>
+              <label htmlFor="numQuestions" className="block text-lg font-medium text-gray-700 dark:text-gray-200">Number of Questions ({maxQuestionsAvailable} available)</label>
               <div className="flex items-center justify-center space-x-4 my-4">
-                <span className="text-sm font-medium text-gray-500">{minQuestions > 0 ? minQuestions : 0}</span>
-                <input id="numQuestions" type="range" min={minQuestions > 0 ? minQuestions : 0} max={maxQuestions > 0 ? maxQuestions : 0} value={numQuestions} onChange={(e) => setNumQuestions(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed" disabled={maxQuestionsAvailable < minQuestions || maxQuestionsAvailable === 0}/>
-                <span className="text-sm font-medium text-gray-500">{maxQuestions > 0 ? maxQuestions : 0}</span>
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{minQuestions > 0 ? minQuestions : 0}</span>
+                <input id="numQuestions" type="range" min={minQuestions > 0 ? minQuestions : 0} max={maxQuestions > 0 ? maxQuestions : 0} value={numQuestions} onChange={(e) => setNumQuestions(Number(e.target.value))} className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed" disabled={maxQuestionsAvailable < minQuestions || maxQuestionsAvailable === 0}/>
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{maxQuestions > 0 ? maxQuestions : 0}</span>
               </div>
-              <div className="font-bold text-blue-600 text-4xl my-4">{numQuestions}</div>
+              <div className="font-bold text-blue-600 dark:text-blue-400 text-4xl my-4">{numQuestions}</div>
             </div>
 
             {maxQuestionsAvailable < minQuestions ? (
-                <p className="text-red-600 mt-4">{selectedTopics.length > 0 ? `Not enough questions found for the selected topics (minimum ${minQuestions} required).` : 'Please select at least one topic to start the quiz.'}</p>
+                <p className="text-red-600 dark:text-red-400 mt-4">{selectedTopics.length > 0 ? `Not enough questions found for the selected topics (minimum ${minQuestions} required).` : 'Please select at least one topic to start the quiz.'}</p>
             ) : (
               <div className="mt-8">
                 <button onClick={handleStartNewQuiz} disabled={selectedTopics.length === 0 || numQuestions === 0} className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-105 transition-transform disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none">Start Quiz</button>
@@ -406,8 +419,8 @@ const QuizView: React.FC<{ quizData: Quiz; fileName: string; }> = ({ quizData, f
     );
   }
   
-  if (quizFinished) { const correctAnswers = userAnswers.filter((answer, index) => answer === activeQuestions[index].correctAnswerIndex).length; const percentageScore = Math.round((correctAnswers / activeQuestions.length) * 100); const passed = percentageScore >= 90; const incorrectQuestions = activeQuestions.filter((q, index) => userAnswers[index] !== null && userAnswers[index] !== q.correctAnswerIndex); const topicsToReview = [...new Set(incorrectQuestions.map(q => q.topic))]; return ( <div className="text-center p-8 bg-white rounded-lg shadow-md"><h2 className="text-3xl font-bold text-gray-800">Quiz Completed!</h2><div className={`mt-6 p-6 rounded-lg ${passed ? 'bg-green-50' : 'bg-red-50'}`}><p className="text-lg">Your final score</p><p className={`mt-2 text-6xl font-bold ${passed ? 'text-green-600' : 'text-red-600'}`}>{percentageScore}%</p><p>({correctAnswers} out of {activeQuestions.length} correct)</p>{passed ? <p className="mt-4 font-semibold text-green-700">Congratulations!</p> : <p className="mt-4 font-semibold text-red-700">Review the topics below.</p>}</div>{!passed && topicsToReview.length > 0 && (<div className="mt-8 text-left p-6 bg-yellow-50 border-l-4 border-yellow-400"><h3 className="text-xl font-bold">Areas for Review</h3><ul className="list-disc list-inside mt-4">{topicsToReview.map((topic, index) => <li key={index}>{topic}</li>)}</ul></div>)}<div className="mt-10 flex gap-4 justify-center"><button onClick={handleRestartQuiz} className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg">Start New Quiz</button><button onClick={handleExportToDoc} className="inline-flex items-center px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg"><DownloadIconQV />Export for Forms (.doc)</button></div></div>); }
-  return ( <div className="max-w-4xl mx-auto"><div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold">{quizData.quizTitle}</h2><p className="text-lg font-semibold text-blue-600">Score: {score}</p></div><div className="w-full bg-gray-200 rounded-full h-2.5 mb-4"><div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div></div><p className="text-sm text-gray-500 text-right mb-4">Question {currentQuestionIndex + 1} of {activeQuestions.length}</p><div className="bg-white p-6 rounded-lg shadow"><p className="text-lg font-semibold mb-4">{currentQuestion.questionText}</p><div className="space-y-3">{currentQuestion.options.map((option, index) => (<button key={index} onClick={() => handleAnswerSelect(index)} disabled={isAnswered} className={`w-full text-left p-4 border rounded-lg flex items-center justify-between transition-all duration-300 ${getOptionClass(index)}`}><span>{option}</span>{isAnswered && (<span className={`flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center ${index === currentQuestion.correctAnswerIndex ? 'bg-green-500' : 'bg-red-500'}`}>{index === currentQuestion.correctAnswerIndex ? <CheckIcon /> : <XIcon />}</span>)}</button>))}</div>{showExplanation && (<div className="mt-6 p-4 bg-yellow-50 border-l-4 border-yellow-400"><h4 className="font-bold">Explanation</h4><p>{currentQuestion.explanation}</p><div className="mt-6 text-right"><button onClick={handleNextQuestion} className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg">{currentQuestionIndex < activeQuestions.length - 1 ? 'Next Question' : 'Finish Quiz'}</button></div></div>)}</div></div>);
+  if (quizFinished) { const correctAnswers = userAnswers.filter((answer, index) => answer === activeQuestions[index].correctAnswerIndex).length; const percentageScore = Math.round((correctAnswers / activeQuestions.length) * 100); const passed = percentageScore >= 90; const incorrectQuestions = activeQuestions.filter((q, index) => userAnswers[index] !== null && userAnswers[index] !== q.correctAnswerIndex); const topicsToReview = [...new Set(incorrectQuestions.map(q => q.topic))]; return ( <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md"><h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Quiz Completed!</h2><div className={`mt-6 p-6 rounded-lg ${passed ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}><p className="text-lg">Your final score</p><p className={`mt-2 text-6xl font-bold ${passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{percentageScore}%</p><p>({correctAnswers} out of {activeQuestions.length} correct)</p>{passed ? <p className="mt-4 font-semibold text-green-700 dark:text-green-300">Congratulations!</p> : <p className="mt-4 font-semibold text-red-700 dark:text-red-300">Review the topics below.</p>}</div>{!passed && topicsToReview.length > 0 && (<div className="mt-8 text-left p-6 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 dark:border-yellow-500"><h3 className="text-xl font-bold dark:text-gray-100">Areas for Review</h3><ul className="list-disc list-inside mt-4 dark:text-gray-300">{topicsToReview.map((topic, index) => <li key={index}>{topic}</li>)}</ul></div>)}<div className="mt-10 flex gap-4 justify-center"><button onClick={handleRestartQuiz} className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg">Start New Quiz</button><button onClick={handleExportToDoc} className="inline-flex items-center px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg"><DownloadIconQV />Export for Forms (.doc)</button></div></div>); }
+  return ( <div className="max-w-4xl mx-auto"><div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold dark:text-gray-100">{quizData.quizTitle}</h2><p className="text-lg font-semibold text-blue-600 dark:text-blue-400">Score: {score}</p></div><div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-4"><div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div></div><p className="text-sm text-gray-500 dark:text-gray-400 text-right mb-4">Question {currentQuestionIndex + 1} of {activeQuestions.length}</p><div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow"><p className="text-lg font-semibold mb-4 dark:text-gray-100">{currentQuestion.questionText}</p><div className="space-y-3">{currentQuestion.options.map((option, index) => (<button key={index} onClick={() => handleAnswerSelect(index)} disabled={isAnswered} className={`w-full text-left p-4 border rounded-lg flex items-center justify-between transition-all duration-300 ${getOptionClass(index)}`}><span>{option}</span>{isAnswered && (<span className={`flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center ${index === currentQuestion.correctAnswerIndex ? 'bg-green-500' : 'bg-red-500'}`}>{index === currentQuestion.correctAnswerIndex ? <CheckIcon /> : <XIcon />}</span>)}</button>))}</div>{showExplanation && (<div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 dark:border-yellow-500"><h4 className="font-bold dark:text-yellow-200">Explanation</h4><p className="dark:text-yellow-300">{currentQuestion.explanation}</p><div className="mt-6 text-right"><button onClick={handleNextQuestion} className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg">{currentQuestionIndex < activeQuestions.length - 1 ? 'Next Question' : 'Finish Quiz'}</button></div></div>)}</div></div>);
 };
 
 // --- components/FlashcardsView.tsx ---
@@ -444,37 +457,37 @@ const FlashcardsView: React.FC<{ flashcards: Flashcard[]; fileName: string; }> =
 
   if (!deckStarted) {
     return (
-        <div className="max-w-4xl mx-auto text-center p-8 bg-gray-50 rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Flashcard Deck Setup</h2>
-            <p className="text-gray-600 mb-8">Customize your study session.</p>
+        <div className="max-w-4xl mx-auto text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Flashcard Deck Setup</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-8">Customize your study session.</p>
 
             <div className="max-w-xl mx-auto my-8 text-left">
-              <h3 className="text-lg font-medium text-gray-700 mb-3">Filter by Topic</h3>
+              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-3">Filter by Topic</h3>
               <div className="flex flex-wrap gap-2 mb-4">
                 {allTopics.map(topic => (
-                  <button key={topic} onClick={() => handleTopicToggle(topic)} className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${selectedTopics.includes(topic) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+                  <button key={topic} onClick={() => handleTopicToggle(topic)} className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${selectedTopics.includes(topic) ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500'}`}>
                     {topic}
                   </button>
                 ))}
               </div>
               <div className="flex gap-4">
-                  <button onClick={handleSelectAllTopics} className="text-sm text-blue-600 hover:underline">Select All</button>
-                  <button onClick={handleDeselectAllTopics} className="text-sm text-blue-600 hover:underline">Deselect All</button>
+                  <button onClick={handleSelectAllTopics} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">Select All</button>
+                  <button onClick={handleDeselectAllTopics} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">Deselect All</button>
               </div>
             </div>
 
             <div className="max-w-md mx-auto">
-              <label htmlFor="numFlashcards" className="block text-lg font-medium text-gray-700">Number of Flashcards ({maxFlashcardsAvailable} available)</label>
+              <label htmlFor="numFlashcards" className="block text-lg font-medium text-gray-700 dark:text-gray-200">Number of Flashcards ({maxFlashcardsAvailable} available)</label>
               <div className="flex items-center justify-center space-x-4 my-4">
-                <span className="text-sm font-medium text-gray-500">{minFlashcards > 0 ? minFlashcards : 0}</span>
-                <input id="numFlashcards" type="range" min={minFlashcards > 0 ? minFlashcards : 0} max={maxFlashcards > 0 ? maxFlashcards : 0} value={numFlashcards} onChange={(e) => setNumFlashcards(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed" disabled={maxFlashcardsAvailable < minFlashcards || maxFlashcardsAvailable === 0} />
-                <span className="text-sm font-medium text-gray-500">{maxFlashcards > 0 ? maxFlashcards : 0}</span>
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{minFlashcards > 0 ? minFlashcards : 0}</span>
+                <input id="numFlashcards" type="range" min={minFlashcards > 0 ? minFlashcards : 0} max={maxFlashcards > 0 ? maxFlashcards : 0} value={numFlashcards} onChange={(e) => setNumFlashcards(Number(e.target.value))} className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed" disabled={maxFlashcardsAvailable < minFlashcards || maxFlashcardsAvailable === 0} />
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{maxFlashcards > 0 ? maxFlashcards : 0}</span>
               </div>
-              <div className="font-bold text-blue-600 text-4xl my-4">{numFlashcards}</div>
+              <div className="font-bold text-blue-600 dark:text-blue-400 text-4xl my-4">{numFlashcards}</div>
             </div>
 
             {maxFlashcardsAvailable < minFlashcards ? (
-                <p className="text-red-600 mt-4">{selectedTopics.length > 0 ? `Not enough flashcards found for the selected topics (minimum ${minFlashcards} required).` : 'Please select at least one topic to start.'}</p>
+                <p className="text-red-600 dark:text-red-400 mt-4">{selectedTopics.length > 0 ? `Not enough flashcards found for the selected topics (minimum ${minFlashcards} required).` : 'Please select at least one topic to start.'}</p>
             ) : (
               <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
                 <button onClick={handleStartDeck} disabled={selectedTopics.length === 0 || numFlashcards === 0} className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-105 transition-transform disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none">Start Studying</button>
@@ -488,9 +501,9 @@ const FlashcardsView: React.FC<{ flashcards: Flashcard[]; fileName: string; }> =
   const currentCard = activeFlashcards[currentIndex];
   return (
     <div className="max-w-2xl mx-auto flex flex-col items-center">
-      <style>{`.perspective{perspective:1500px}.card{transform-style:preserve-3d;transition:transform .6s;cursor:pointer}.card.is-flipped{transform:rotateY(180deg)}.card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;padding:1.5rem;text-align:center;border-radius:.75rem}.card-face-front{background:#fff;border:1px solid #e5e7eb}.card-face-back{transform:rotateY(180deg);background:#f0f9ff;border:1px solid #bae6fd}`}</style>
-      {activeFlashcards.length > 0 ? (<><div className="w-full h-72 md:h-80 perspective"><div className={`relative w-full h-full card ${isFlipped ? 'is-flipped' : ''}`} onClick={() => setIsFlipped(!isFlipped)}><div className="card-face card-face-front"><h3 className="text-2xl font-bold">{currentCard.term}</h3></div><div className="card-face card-face-back"><p className="text-lg">{currentCard.definition}</p></div></div></div><p className="text-sm text-gray-500 mt-4">Click card to flip (or press spacebar)</p><div className="flex items-center justify-between w-full mt-6"><button onClick={handlePrev} disabled={currentIndex === 0} className="p-3 rounded-full bg-gray-200 disabled:opacity-50"><ArrowLeftIcon /></button><p>{currentIndex + 1} / {activeFlashcards.length}</p><button onClick={handleNext} disabled={currentIndex === activeFlashcards.length - 1} className="p-3 rounded-full bg-gray-200 disabled:opacity-50"><ArrowRightIcon /></button></div>
-      <div className="mt-8 pt-6 border-t w-full flex justify-center items-center gap-4">
+      <style>{`.perspective{perspective:1500px}.card{transform-style:preserve-3d;transition:transform .6s;cursor:pointer}.card.is-flipped{transform:rotateY(180deg)}.card-face{position:absolute;width:100%;height:100%;-webkit-backface-visibility:hidden;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;padding:1.5rem;text-align:center;border-radius:.75rem}.card-face-front{background:#fff;border:1px solid #e5e7eb}.dark .card-face-front{background:#1f2937;border:1px solid #374151;color:#f9fafb}.card-face-back{transform:rotateY(180deg);background:#f0f9ff;border:1px solid #bae6fd}.dark .card-face-back{transform:rotateY(180deg);background:#374151;border:1px solid #4b5563;color:#e5e7eb}`}</style>
+      {activeFlashcards.length > 0 ? (<><div className="w-full h-72 md:h-80 perspective"><div className={`relative w-full h-full card ${isFlipped ? 'is-flipped' : ''}`} onClick={() => setIsFlipped(!isFlipped)}><div className="card-face card-face-front"><h3 className="text-2xl font-bold">{currentCard.term}</h3></div><div className="card-face card-face-back"><p className="text-lg">{currentCard.definition}</p></div></div></div><p className="text-sm text-gray-500 dark:text-gray-400 mt-4">Click card to flip (or press spacebar)</p><div className="flex items-center justify-between w-full mt-6 text-gray-800 dark:text-gray-200"><button onClick={handlePrev} disabled={currentIndex === 0} className="p-3 rounded-full bg-gray-200 dark:bg-gray-700 disabled:opacity-50"><ArrowLeftIcon /></button><p>{currentIndex + 1} / {activeFlashcards.length}</p><button onClick={handleNext} disabled={currentIndex === activeFlashcards.length - 1} className="p-3 rounded-full bg-gray-200 dark:bg-gray-700 disabled:opacity-50"><ArrowRightIcon /></button></div>
+      <div className="mt-8 pt-6 border-t w-full flex justify-center items-center gap-4 border-gray-200 dark:border-gray-700">
         <button onClick={handleRestart} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md">Change Settings</button>
         <button onClick={handleExportCsv} className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md"><DownloadIconFV />Export Filtered to CSV</button>
       </div>
@@ -506,12 +519,12 @@ const TrashIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w
 const LibraryView: React.FC<{ library: SavedArticle[]; onViewArticle: (article: SavedArticle) => void; onGoHome: () => void; onDeleteArticle: (articleId: string) => void; }> = ({ library, onViewArticle, onGoHome, onDeleteArticle }) => {
     const groupedBySpecialty = library.reduce((acc, article) => { (acc[article.specialty] = acc[article.specialty] || []).push(article); return acc; }, {} as Record<string, SavedArticle[]>);
     return (
-        <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg">
-            <div className="flex justify-between items-center mb-6 border-b pb-4">
-                <div><h2 className="text-2xl font-bold text-gray-800">My Article Library</h2><p className="text-sm text-gray-500">Review your saved analyses.</p></div>
-                <button onClick={onGoHome} className="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 text-sm"><BackIcon />Back to Home</button>
+        <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg">
+            <div className="flex justify-between items-center mb-6 border-b dark:border-gray-700 pb-4">
+                <div><h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">My Article Library</h2><p className="text-sm text-gray-500 dark:text-gray-400">Review your saved analyses.</p></div>
+                <button onClick={onGoHome} className="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"><BackIcon />Back to Home</button>
             </div>
-            {library.length === 0 ? (<div className="text-center py-16"><EmptyStateIcon /><h3 className="mt-2 text-lg font-medium">Your library is empty</h3><p className="mt-1 text-sm text-gray-500">Analyze a new document to save it here.</p></div>) : (<div className="space-y-8">{Object.entries(groupedBySpecialty).map(([specialty, articles]) => (<div key={specialty}><h3 className="text-xl font-semibold text-gray-700 border-b-2 border-blue-500 pb-2 mb-4">{specialty}</h3><ul className="space-y-3">{articles.map(article => (<li key={article.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-blue-50 transition-all border border-gray-200"><button onClick={() => onViewArticle(article)} className="flex-grow text-left"><p className="font-semibold text-blue-700">{article.fileName}</p><p className="text-xs text-gray-500">Saved on: {new Date(article.savedAt).toLocaleDateString()}</p></button><button onClick={(e) => { e.stopPropagation(); onDeleteArticle(article.id); }} className="ml-4 p-2 text-gray-400 hover:text-red-600 rounded-full"><TrashIcon /></button></li>))}</ul></div>))}</div>)}
+            {library.length === 0 ? (<div className="text-center py-16"><EmptyStateIcon /><h3 className="mt-2 text-lg font-medium dark:text-gray-200">Your library is empty</h3><p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Analyze a new document to save it here.</p></div>) : (<div className="space-y-8">{Object.entries(groupedBySpecialty).map(([specialty, articles]) => (<div key={specialty}><h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200 border-b-2 border-blue-500 dark:border-blue-400 pb-2 mb-4">{specialty}</h3><ul className="space-y-3">{articles.map(article => (<li key={article.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-all border border-gray-200 dark:border-gray-600"><button onClick={() => onViewArticle(article)} className="flex-grow text-left"><p className="font-semibold text-blue-700 dark:text-blue-400">{article.fileName}</p><p className="text-xs text-gray-500 dark:text-gray-400">Saved on: {new Date(article.savedAt).toLocaleDateString()}</p></button><button onClick={(e) => { e.stopPropagation(); onDeleteArticle(article.id); }} className="ml-4 p-2 text-gray-400 hover:text-red-600 rounded-full"><TrashIcon /></button></li>))}</ul></div>))}</div>)}
         </div>
     );
 };
@@ -519,14 +532,24 @@ const LibraryView: React.FC<{ library: SavedArticle[]; onViewArticle: (article: 
 // --- App.tsx ---
 type View = 'summary' | 'quiz' | 'flashcards';
 type AppState = 'home' | 'analysis' | 'library';
-const Header: React.FC<{ onViewLibrary: () => void }> = ({ onViewLibrary }) => (
-  <header className="bg-white shadow-sm"><div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex items-center justify-between"><div className="flex items-center space-x-3"><div className="bg-blue-600 p-2 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div><h1 className="text-2xl font-bold text-gray-900">Medic Papers Boost CS</h1></div><div className="flex items-center gap-4"><button onClick={onViewLibrary} className="px-4 py-2 bg-blue-100 text-blue-700 font-semibold rounded-lg hover:bg-blue-200 text-sm">My Library</button></div></div></header>
+type Theme = 'light' | 'dark';
+
+const Header: React.FC<{ onViewLibrary: () => void; theme: Theme; toggleTheme: () => void; }> = ({ onViewLibrary, theme, toggleTheme }) => (
+  <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors duration-300"><div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex items-center justify-between"><div className="flex items-center space-x-3"><div className="bg-blue-600 p-2 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div><h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Medic Papers Boost CS</h1></div><div className="flex items-center gap-4"><button onClick={onViewLibrary} className="px-4 py-2 bg-blue-100 text-blue-700 dark:bg-gray-700 dark:text-gray-100 font-semibold rounded-lg hover:bg-blue-200 dark:hover:bg-gray-600 text-sm">My Library</button>
+  <button onClick={toggleTheme} className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+    {theme === 'dark' ? (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+    ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+    )}
+    </button>
+  </div></div></header>
 );
 const PRESET_SPECIALTIES = ["Medicina Interna", "Cardiologia", "Pediatria", "Ginecologia", "Cirugia General"];
 const SaveToLibraryForm: React.FC<{ onSave: (specialty: string) => void }> = ({ onSave }) => {
     const [selectedSpecialty, setSelectedSpecialty] = useState(PRESET_SPECIALTIES[0]); const [customSpecialty, setCustomSpecialty] = useState('');
     const handleSave = () => { const s = selectedSpecialty === 'Other' ? customSpecialty.trim() : selectedSpecialty; if (s) onSave(s); else alert('Please enter a custom specialty name.'); };
-    return (<div className="p-4 bg-blue-50 border border-blue-200 rounded-lg"><h3 className="font-semibold">Save to Library</h3><p className="text-sm text-gray-600 mb-3">Organize this analysis by assigning it to a specialty.</p><div className="flex flex-col sm:flex-row gap-2 items-center"><select value={selectedSpecialty} onChange={(e) => setSelectedSpecialty(e.target.value)} className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md">{PRESET_SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}<option value="Other">Create New...</option></select>{selectedSpecialty === 'Other' && (<input type="text" value={customSpecialty} onChange={(e) => setCustomSpecialty(e.target.value)} placeholder="New specialty name" className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md" />)}<button onClick={handleSave} className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Save</button></div></div>);
+    return (<div className="p-4 bg-blue-50 dark:bg-gray-700/50 border border-blue-200 dark:border-gray-700 rounded-lg"><h3 className="font-semibold dark:text-gray-100">Save to Library</h3><p className="text-sm text-gray-600 dark:text-gray-300 mb-3">Organize this analysis by assigning it to a specialty.</p><div className="flex flex-col sm:flex-row gap-2 items-center"><select value={selectedSpecialty} onChange={(e) => setSelectedSpecialty(e.target.value)} className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200">{PRESET_SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}<option value="Other">Create New...</option></select>{selectedSpecialty === 'Other' && (<input type="text" value={customSpecialty} onChange={(e) => setCustomSpecialty(e.target.value)} placeholder="New specialty name" className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200" />)}<button onClick={handleSave} className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Save</button></div></div>);
 };
 function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -546,6 +569,27 @@ function App() {
   const [summaryDetail, setSummaryDetail] = useState<DetailLevel>('concrete');
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const storedTheme = window.localStorage.getItem('theme') as Theme;
+      if (storedTheme) return storedTheme;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return 'light';
+  });
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => {
+      const newTheme = prevTheme === 'light' ? 'dark' : 'light';
+      localStorage.setItem('theme', newTheme);
+      if (newTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      return newTheme;
+    });
+  };
 
   useEffect(() => { setLibrary(getLibrary()); }, []);
 
@@ -648,44 +692,44 @@ function App() {
   const handleDeleteArticle = (articleId: string) => { if (window.confirm('Are you sure?')) { setLibrary(deleteArticle(articleId)); } };
   
   const renderAnalysisView = () => { 
-    if (isLoading) { return <div className="text-center p-10"><LoadingSpinner /><p className="mt-4">Analyzing...</p></div>; } 
-    if (error) { return <div className="text-center p-10 bg-red-50"><p className="text-red-700 font-semibold">An Error Occurred</p><p className="mt-2 text-red-600">{error}</p><button onClick={handleStartNewAnalysis} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">Try Again</button></div>; } 
-    if (analysisResult) { return (<div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg print-reset-layout"><div className="flex justify-between items-center mb-6 border-b pb-4 no-print"><h2 className="text-2xl font-bold truncate pr-4" title={fileName}>{fileName}</h2><button onClick={handleStartNewAnalysis} className="flex-shrink-0 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm">Analyze New</button></div><div className="no-print">{!isCurrentArticleSaved ? (<div className="mb-6"><SaveToLibraryForm onSave={handleSaveToLibrary} /></div>) : (<div className="mb-6 p-4 bg-green-50 rounded-lg flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><p className="text-green-800">This analysis is saved in your library.</p></div>)}</div><div className="border-b border-gray-200 no-print"><nav className="-mb-px flex space-x-8"><button onClick={() => setCurrentView('summary')} className={`${currentView === 'summary' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Summary</button><button onClick={() => setCurrentView('quiz')} className={`${currentView === 'quiz' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Interactive Quiz</button><button onClick={() => setCurrentView('flashcards')} className={`${currentView === 'flashcards' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Flashcards</button></nav></div><div className="mt-6">{currentView === 'summary' && <SummaryView htmlContent={analysisResult.summary} fileName={fileName} />}{currentView === 'quiz' && <QuizView quizData={analysisResult.quiz} fileName={fileName} />}{currentView === 'flashcards' && <FlashcardsView flashcards={analysisResult.flashcards} fileName={fileName} />}</div></div>); } 
+    if (isLoading) { return <div className="text-center p-10"><LoadingSpinner /><p className="mt-4 dark:text-gray-300">Analyzing...</p></div>; } 
+    if (error) { return <div className="text-center p-10 bg-red-50 dark:bg-red-900/20"><p className="text-red-700 dark:text-red-300 font-semibold">An Error Occurred</p><p className="mt-2 text-red-600 dark:text-red-400">{error}</p><button onClick={handleStartNewAnalysis} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">Try Again</button></div>; } 
+    if (analysisResult) { return (<div className="bg-white dark:bg-gray-800 p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg print-reset-layout"><div className="flex justify-between items-center mb-6 border-b dark:border-gray-700 pb-4 no-print"><h2 className="text-2xl font-bold truncate pr-4 dark:text-gray-100" title={fileName}>{fileName}</h2><button onClick={handleStartNewAnalysis} className="flex-shrink-0 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm">Analyze New</button></div><div className="no-print">{!isCurrentArticleSaved ? (<div className="mb-6"><SaveToLibraryForm onSave={handleSaveToLibrary} /></div>) : (<div className="mb-6 p-4 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><p className="text-green-800 dark:text-green-300">This analysis is saved in your library.</p></div>)}</div><div className="border-b border-gray-200 dark:border-gray-700 no-print"><nav className="-mb-px flex space-x-8"><button onClick={() => setCurrentView('summary')} className={`${currentView === 'summary' ? 'border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'} py-4 px-1 border-b-2 font-medium text-sm`}>Summary</button><button onClick={() => setCurrentView('quiz')} className={`${currentView === 'quiz' ? 'border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'} py-4 px-1 border-b-2 font-medium text-sm`}>Interactive Quiz</button><button onClick={() => setCurrentView('flashcards')} className={`${currentView === 'flashcards' ? 'border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'} py-4 px-1 border-b-2 font-medium text-sm`}>Flashcards</button></nav></div><div className="mt-6">{currentView === 'summary' && <SummaryView htmlContent={analysisResult.summary} fileName={fileName} />}{currentView === 'quiz' && <QuizView quizData={analysisResult.quiz} fileName={fileName} />}{currentView === 'flashcards' && <FlashcardsView flashcards={analysisResult.flashcards} fileName={fileName} />}</div></div>); } 
     if (pendingFile) { return <SummaryDetailSelector fileName={fileName} detail={summaryDetail} setDetail={setSummaryDetail} onStartAnalysis={handleStartAnalysis} />; }
     return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />; 
   };
   
   const renderContent = () => {
     if (isCheckingApiKey) {
-        return <div className="text-center p-10"><LoadingSpinner /><p className="mt-4">Checking API Key...</p></div>;
+        return <div className="text-center p-10"><LoadingSpinner /><p className="mt-4 dark:text-gray-300">Checking API Key...</p></div>;
     }
 
     if (!apiKeySelected) {
         if (isAiStudio) {
             return (
-                <div className="max-w-xl mx-auto text-center p-8 bg-white rounded-lg shadow-md mt-10">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-4">API Key Required</h2>
-                    <p className="text-gray-600 mb-6">To use this application, you need to select a Google AI Studio API key. Your key is used only for this session and is not stored.</p>
+                <div className="max-w-xl mx-auto text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md mt-10">
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">API Key Required</h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">To use this application, you need to select a Google AI Studio API key. Your key is used only for this session and is not stored.</p>
                     <button onClick={handleSelectApiKey} className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
                         Select API Key
                     </button>
-                    <p className="text-xs text-gray-500 mt-4">
-                        For information on billing, please visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ai.google.dev/gemini-api/docs/billing</a>.
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                        For information on billing, please visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">ai.google.dev/gemini-api/docs/billing</a>.
                     </p>
                 </div>
             );
         } else {
              return (
-                <div className="max-w-xl mx-auto text-center p-8 bg-white rounded-lg shadow-md mt-10">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-4">API Key Required</h2>
-                    <p className="text-gray-600 mb-6">Please enter your Google AI Studio API key to continue. Your key is stored in your browser's session and is not sent anywhere else.</p>
+                <div className="max-w-xl mx-auto text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md mt-10">
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">API Key Required</h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">Please enter your Google AI Studio API key to continue. Your key is stored in your browser's session and is not sent anywhere else.</p>
                     <div className="flex flex-col sm:flex-row gap-2">
                         <input 
                             type="password" 
                             value={manualApiKey} 
                             onChange={(e) => setManualApiKey(e.target.value)} 
                             placeholder="Enter your API Key"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
                         <button 
                             onClick={handleSaveManualKey} 
@@ -694,11 +738,11 @@ function App() {
                             Save Key
                         </button>
                     </div>
-                     <p className="text-xs text-gray-500 mt-4">
-                        You can get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.
+                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                        You can get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">Google AI Studio</a>.
                     </p>
-                    <p className="text-xs text-gray-500 mt-2">
-                        For information on billing, please visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">ai.google.dev/gemini-api/docs/billing</a>.
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        For information on billing, please visit <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">ai.google.dev/gemini-api/docs/billing</a>.
                     </p>
                 </div>
             );
@@ -706,7 +750,7 @@ function App() {
     }
       
     switch (appState) { case 'home': return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; case 'library': return <LibraryView library={library} onViewArticle={handleViewSavedArticle} onGoHome={handleResetToHome} onDeleteArticle={handleDeleteArticle} />; case 'analysis': return renderAnalysisView(); default: return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; } };
-  return (<div className="min-h-screen bg-gray-100"><div className="no-print"><Header onViewLibrary={handleViewLibrary} /></div><main><div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 print-reset-layout"><div className="px-4 py-6 sm:px-0 print-reset-layout">{renderContent()}</div></div></main></div>);
+  return (<div className="min-h-screen bg-gray-100 dark:bg-gray-900"><div className="no-print"><Header onViewLibrary={handleViewLibrary} theme={theme} toggleTheme={toggleTheme} /></div><main><div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 print-reset-layout"><div className="px-4 py-6 sm:px-0 print-reset-layout">{renderContent()}</div></div></main></div>);
 }
 
 // --- Final Render Call ---

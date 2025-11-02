@@ -11,10 +11,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Babel for in-browser TSX transformation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+      // Theme switcher script to prevent FOUC
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+      html.dark {
+        color-scheme: dark;
+      }
       body {
         font-family: 'Inter', sans-serif;
+        @apply transition-colors duration-300;
       }
       @media print {
         body, html {
@@ -79,7 +91,7 @@
 }
 </script>
 </head>
-  <body class="bg-gray-50">
+  <body class="bg-gray-50 dark:bg-gray-900">
     <div id="root"></div>
 
     <script>
