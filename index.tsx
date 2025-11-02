@@ -157,14 +157,26 @@ const responseSchema = {
     required: ['summary', 'quiz', 'flashcards']
 };
 
-async function generateMedicalAnalysis(pdfText: string): Promise<AnalysisResult> {
+async function generateMedicalAnalysis(pdfText: string, detailLevel: string): Promise<AnalysisResult> {
     const API_KEY = process.env.API_KEY;
     if (!API_KEY) {
       throw new Error("API Key not found. Please select or enter an API Key to continue.");
     }
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 
-    const detailInstruction = 'The user has selected: "Profundo, para examenes". The summary must be profound, comprehensive, and detailed, suitable for exam preparation or in-depth study. It must include specifics about methodologies, data points, results, limitations, and clinical implications. Complex concepts must be explained thoroughly. The target audience is a professional or student who needs to master the subject matter.';
+    let detailInstruction = '';
+    switch(detailLevel) {
+        case 'Conciso':
+            detailInstruction = 'The user has selected: "Conciso". The summary must be brief and to the point, highlighting only the most critical findings, conclusions, and clinical implications. Use bullet points extensively. The target audience is a busy professional who needs a quick overview.';
+            break;
+        case 'Profundo':
+            detailInstruction = 'The user has selected: "Profundo". The summary must be profound, comprehensive, and detailed, suitable for exam preparation or in-depth study. It must include specifics about methodologies, data points, results, limitations, and clinical implications. Complex concepts must be explained thoroughly. The target audience is a professional or student who needs to master the subject matter.';
+            break;
+        case 'Detallado':
+        default:
+             detailInstruction = 'The user has selected: "Detallado". The summary must provide a balanced level of detail, covering the main sections of the document (Introduction, Methods, Results, Discussion) with sufficient explanation for good understanding without being overly verbose. The target audience is someone who wants to understand the study thoroughly without getting lost in minute details.';
+            break;
+    }
     
     const model = 'gemini-2.5-pro';
     const prompt = `
@@ -297,6 +309,7 @@ const AiThinkingProcess: React.FC = () => {
     );
 };
 
+
 // --- components/Home.tsx ---
 const FeatureIcon1 = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
 const FeatureIcon2 = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>;
@@ -335,6 +348,61 @@ const FileUpload: React.FC<{ onFileUpload: (file: File) => void; isLoading: bool
       </div><p className="text-xs text-gray-500 mt-4">Your documents are processed securely and are not stored.</p>
     </div>
   );
+};
+
+// --- components/SummaryDetailSelector.tsx ---
+const DetailIcon1 = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" /></svg>;
+const DetailIcon2 = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>;
+const DetailIcon3 = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>;
+
+const SummaryDetailSelector: React.FC<{
+  fileName: string;
+  onStartAnalysis: (detailLevel: string) => void;
+  onCancel: () => void;
+}> = ({ fileName, onStartAnalysis, onCancel }) => {
+    const [selectedDetail, setSelectedDetail] = useState('Detallado');
+    const detailOptions = [
+        { id: 'Conciso', label: 'Conciso', description: 'Resumen rápido con los puntos clave.', icon: <DetailIcon1 /> },
+        { id: 'Detallado', label: 'Detallado', description: 'Un análisis equilibrado, bueno para estudio general.', icon: <DetailIcon2 /> },
+        { id: 'Profundo', label: 'Profundo', description: 'Explicaciones exhaustivas, ideal para exámenes.', icon: <DetailIcon3 /> },
+    ];
+
+    return (
+        <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Prepare Analysis</h2>
+            <p className="text-gray-600 mb-1">File selected: <span className="font-semibold text-gray-900">{fileName}</span></p>
+            <p className="text-gray-600 mb-6">Choose the desired level of detail for the summary.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                {detailOptions.map(option => (
+                    <button
+                        key={option.id}
+                        onClick={() => setSelectedDetail(option.id)}
+                        className={`p-6 border rounded-lg text-center transition-all duration-200 ${selectedDetail === option.id ? 'bg-blue-600 text-white border-blue-700 shadow-lg scale-105' : 'bg-white hover:bg-gray-50 border-gray-300'}`}
+                    >
+                        <div className={`mx-auto ${selectedDetail === option.id ? 'text-white' : 'text-blue-600'}`}>{option.icon}</div>
+                        <h3 className="font-semibold text-lg">{option.label}</h3>
+                        <p className={`text-sm mt-1 ${selectedDetail === option.id ? 'text-blue-100' : 'text-gray-500'}`}>{option.description}</p>
+                    </button>
+                ))}
+            </div>
+            
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+                <button
+                    onClick={() => onStartAnalysis(selectedDetail)}
+                    className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-105 transition-transform"
+                >
+                    Start Analysis
+                </button>
+                 <button
+                    onClick={onCancel}
+                    className="w-full sm:w-auto px-8 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300"
+                >
+                    Change File
+                </button>
+            </div>
+        </div>
+    );
 };
 
 // --- components/SummaryView.tsx ---
@@ -619,8 +687,9 @@ function App() {
   const [appState, setAppState] = useState<AppState>('home');
   const [library, setLibrary] = useState<SavedArticle[]>([]);
   const [isCurrentArticleSaved, setIsCurrentArticleSaved] = useState<boolean>(false);
-  const API_KEY_STORAGE_KEY = 'gemini_api_key';
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  const API_KEY_STORAGE_KEY = 'gemini_api_key';
   const [apiKeySelected, setApiKeySelected] = useState(false);
   const [isCheckingApiKey, setIsCheckingApiKey] = useState(true);
 
@@ -628,7 +697,6 @@ function App() {
 
   const availableSpecialties = useMemo(() => {
     const specialtiesFromLibrary = library.map(article => article.specialty);
-    // Combine presets with specialties from the library, ensure uniqueness, and sort alphabetically.
     const allUniqueSpecialties = [...new Set([...PRESET_SPECIALTIES, ...specialtiesFromLibrary])];
     return allUniqueSpecialties.sort((a, b) => a.localeCompare(b));
   }, [library]);
@@ -667,55 +735,65 @@ function App() {
     for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        // Use the type guard to filter and correctly type the items
         fullText += textContent.items
             .filter(isPdfTextItem)
             .map(item => item.str)
             .join(' ') + '\n\n';
     }
-    // Post-process the text to clean it up
-    let processedText = fullText.replace(/-\s*\n\n\s*/g, ''); // Re-join hyphenated words
-    processedText = processedText.replace(/[ \t]+/g, ' ').trim(); // Consolidate whitespace
+    let processedText = fullText.replace(/-\s*\n\n\s*/g, ''); 
+    processedText = processedText.replace(/[ \t]+/g, ' ').trim(); 
     return processedText;
   };
   
-  const handleFileUpload = useCallback(async (file: File) => {
+  const handleFileUpload = useCallback((file: File) => {
     if (!file) return;
+    localStorage.removeItem(LOCAL_STORAGE_KEY); // Clear old quiz progress
+    setAnalysisResult(null);
+    setError(null);
+    setIsCurrentArticleSaved(false);
+    setFileName(file.name);
+    setSelectedFile(file); // Set the file to trigger the detail selector view
+    setAppState('analysis');
+  }, []);
+
+  const handleStartAnalysis = useCallback(async (detailLevel: string) => {
+    if (!selectedFile) return;
+
     setIsLoading(true);
     setError(null);
     setAnalysisResult(null);
-    setIsCurrentArticleSaved(false);
-    setFileName(file.name);
-    setAppState('analysis');
+
     try {
-      const pdfText = await extractTextFromPdf(file);
-      if (pdfText.trim().length === 0) throw new Error("Could not extract text from the PDF. The document might be image-based or empty.");
-      const result = await generateMedicalAnalysis(pdfText);
-      setAnalysisResult(result);
-      setCurrentView('summary');
+        const pdfText = await extractTextFromPdf(selectedFile);
+        if (pdfText.trim().length === 0) {
+            throw new Error("Could not extract text from the PDF. The document might be image-based or empty.");
+        }
+        const result = await generateMedicalAnalysis(pdfText, detailLevel);
+        setAnalysisResult(result);
+        setCurrentView('summary');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-      console.error(err);
-      if (errorMessage.includes("API Key not found") || errorMessage.includes("The provided API Key is not valid")) {
-          localStorage.removeItem(API_KEY_STORAGE_KEY);
-          if (window.process?.env) {
-              delete window.process.env.API_KEY;
-          }
-          setError(`There was an issue with the API Key. Please enter a valid key and try again. Error: "${errorMessage}"`);
-          setApiKeySelected(false);
-          setAppState('home');
-      } else {
-          setError(`Failed to process document. ${errorMessage}`);
-      }
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+        console.error(err);
+        if (errorMessage.includes("API Key not found") || errorMessage.includes("The provided API Key is not valid")) {
+            localStorage.removeItem(API_KEY_STORAGE_KEY);
+            if (window.process?.env) {
+                delete window.process.env.API_KEY;
+            }
+            setError(`There was an issue with the API Key. Please enter a valid key and try again. Error: "${errorMessage}"`);
+            setApiKeySelected(false);
+            setAppState('home');
+        } else {
+            setError(`Failed to process document. ${errorMessage}`);
+        }
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
-  }, []);
+  }, [selectedFile]);
   
-  const handleResetToHome = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setAppState('home'); }
-  const handleStartNewAnalysis = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setAppState('analysis'); }
+  const handleResetToHome = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setSelectedFile(null); setAppState('home'); }
+  const handleStartNewAnalysis = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setSelectedFile(null); setAppState('analysis'); }
   const handleViewLibrary = () => setAppState('library');
-  const handleViewSavedArticle = (article: SavedArticle) => { setAnalysisResult(article.analysisResult); setFileName(article.fileName); setIsCurrentArticleSaved(true); setCurrentView('summary'); setAppState('analysis'); };
+  const handleViewSavedArticle = (article: SavedArticle) => { setAnalysisResult(article.analysisResult); setFileName(article.fileName); setIsCurrentArticleSaved(true); setCurrentView('summary'); setSelectedFile(null); setAppState('analysis'); };
   const handleSaveToLibrary = (specialty: string) => { if (analysisResult && fileName) { const updatedLibrary = saveArticle(fileName, specialty, analysisResult); setLibrary(updatedLibrary); setIsCurrentArticleSaved(true); } };
   const handleDeleteArticle = (articleId: string) => { if (window.confirm('Are you sure you want to permanently delete this analysis?')) { setLibrary(deleteArticle(articleId)); } };
   
@@ -723,6 +801,7 @@ function App() {
     if (isLoading) { return <AiThinkingProcess />; }
     if (error) { return <div className="text-center p-10 bg-red-50 border-l-4 border-red-400"><p className="text-red-700 font-semibold">An Error Occurred</p><p className="mt-2 text-red-600">{error}</p><button onClick={handleStartNewAnalysis} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Try Again</button></div>; }
     if (analysisResult) { return (<div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg print-reset-layout"><div className="flex justify-between items-center mb-6 border-b pb-4 no-print"><h2 className="text-2xl font-bold truncate pr-4" title={fileName}>{fileName}</h2><button onClick={handleStartNewAnalysis} className="flex-shrink-0 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300 font-semibold">Analyze New</button></div><div className="no-print">{!isCurrentArticleSaved ? (<div className="mb-6"><SaveToLibraryForm onSave={handleSaveToLibrary} availableSpecialties={availableSpecialties} /></div>) : (<div className="mb-6 p-4 bg-green-50 rounded-lg flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><p className="text-green-800 font-medium">This analysis is saved in your library.</p></div>)}</div><div className="border-b border-gray-200 no-print"><nav className="-mb-px flex space-x-8"><button onClick={() => setCurrentView('summary')} className={`${currentView === 'summary' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300'} py-4 px-1 border-b-2 font-medium text-sm`}>Summary</button><button onClick={() => setCurrentView('quiz')} className={`${currentView === 'quiz' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300'} py-4 px-1 border-b-2 font-medium text-sm`}>Interactive Quiz</button><button onClick={() => setCurrentView('flashcards')} className={`${currentView === 'flashcards' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300'} py-4 px-1 border-b-2 font-medium text-sm`}>Flashcards</button></nav></div><div className="mt-6">{currentView === 'summary' && <SummaryView htmlContent={analysisResult.summary} fileName={fileName} />}{currentView === 'quiz' && <QuizView quizData={analysisResult.quiz} fileName={fileName} />}{currentView === 'flashcards' && <FlashcardsView flashcards={analysisResult.flashcards} fileName={fileName} />}</div></div>); }
+    if (selectedFile) { return <SummaryDetailSelector fileName={fileName} onStartAnalysis={handleStartAnalysis} onCancel={handleStartNewAnalysis} />; }
     return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />;
   };
   
@@ -762,11 +841,7 @@ function App() {
     switch (appState) {
         case 'home': return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />;
         case 'library': return <LibraryView library={library} onViewArticle={handleViewSavedArticle} onGoHome={handleResetToHome} onDeleteArticle={handleDeleteArticle} />;
-        case 'analysis':
-            if (!analysisResult && !isLoading && !error) {
-                return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />;
-            }
-            return renderAnalysisView();
+        case 'analysis': return renderAnalysisView();
         default: return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />;
     }
   };
