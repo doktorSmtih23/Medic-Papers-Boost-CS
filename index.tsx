@@ -587,11 +587,29 @@ const Header: React.FC<{ onViewLibrary: () => void; onGoHome: () => void; appSta
 );
 
 const PRESET_SPECIALTIES = ["Medicina Interna", "Cardiologia", "Pediatria", "Ginecologia", "Cirugia General"];
-const SaveToLibraryForm: React.FC<{ onSave: (specialty: string) => void }> = ({ onSave }) => {
-    const [selectedSpecialty, setSelectedSpecialty] = useState(PRESET_SPECIALTIES[0]); const [customSpecialty, setCustomSpecialty] = useState('');
-    const handleSave = () => { const s = selectedSpecialty === 'Other' ? customSpecialty.trim() : selectedSpecialty; if (s) onSave(s); else alert('Please enter a custom specialty name.'); };
-    return (<div className="p-4 bg-blue-50 border border-blue-200 rounded-lg"><h3 className="font-semibold">Save to Library</h3><p className="text-sm text-gray-600 mb-3">Organize this analysis by assigning it to a specialty.</p><div className="flex flex-col sm:flex-row gap-2 items-center"><select value={selectedSpecialty} onChange={(e) => setSelectedSpecialty(e.target.value)} className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md">{PRESET_SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}<option value="Other">Create New...</option></select>{selectedSpecialty === 'Other' && (<input type="text" value={customSpecialty} onChange={(e) => setCustomSpecialty(e.target.value)} placeholder="New specialty name" className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md" />)}<button onClick={handleSave} className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Save</button></div></div>);
+const SaveToLibraryForm: React.FC<{ onSave: (specialty: string) => void; availableSpecialties: string[] }> = ({ onSave, availableSpecialties }) => {
+    const [selectedSpecialty, setSelectedSpecialty] = useState(availableSpecialties.length > 0 ? availableSpecialties[0] : PRESET_SPECIALTIES[0]);
+    const [customSpecialty, setCustomSpecialty] = useState('');
+
+    useEffect(() => {
+        // This effect ensures that if the available specialties update (e.g., after saving a new one),
+        // the dropdown defaults to the first available option if the current one is somehow invalid.
+        if (availableSpecialties.length > 0 && !availableSpecialties.includes(selectedSpecialty) && selectedSpecialty !== 'Other') {
+            setSelectedSpecialty(availableSpecialties[0]);
+        }
+    }, [availableSpecialties, selectedSpecialty]);
+    
+    const handleSave = () => { 
+        const specialtyToSave = selectedSpecialty === 'Other' ? customSpecialty.trim() : selectedSpecialty; 
+        if (specialtyToSave) {
+            onSave(specialtyToSave); 
+        } else {
+            alert('Please enter a custom specialty name.');
+        }
+    };
+    return (<div className="p-4 bg-blue-50 border border-blue-200 rounded-lg"><h3 className="font-semibold">Save to Library</h3><p className="text-sm text-gray-600 mb-3">Organize this analysis by assigning it to a specialty.</p><div className="flex flex-col sm:flex-row gap-2 items-center"><select value={selectedSpecialty} onChange={(e) => setSelectedSpecialty(e.target.value)} className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md">{availableSpecialties.map(s => <option key={s} value={s}>{s}</option>)}<option value="Other">Create New...</option></select>{selectedSpecialty === 'Other' && (<input type="text" value={customSpecialty} onChange={(e) => setCustomSpecialty(e.target.value)} placeholder="New specialty name" className="w-full sm:w-auto flex-grow px-3 py-2 border border-gray-300 rounded-md" />)}<button onClick={handleSave} className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Save</button></div></div>);
 };
+
 function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -607,6 +625,13 @@ function App() {
   const [isCheckingApiKey, setIsCheckingApiKey] = useState(true);
 
   useEffect(() => { setLibrary(getLibrary()); }, []);
+
+  const availableSpecialties = useMemo(() => {
+    const specialtiesFromLibrary = library.map(article => article.specialty);
+    // Combine presets with specialties from the library, ensure uniqueness, and sort alphabetically.
+    const allUniqueSpecialties = [...new Set([...PRESET_SPECIALTIES, ...specialtiesFromLibrary])];
+    return allUniqueSpecialties.sort((a, b) => a.localeCompare(b));
+  }, [library]);
 
    useEffect(() => {
     const checkApiKey = async () => {
@@ -697,7 +722,7 @@ function App() {
   const renderAnalysisView = () => {
     if (isLoading) { return <AiThinkingProcess />; }
     if (error) { return <div className="text-center p-10 bg-red-50 border-l-4 border-red-400"><p className="text-red-700 font-semibold">An Error Occurred</p><p className="mt-2 text-red-600">{error}</p><button onClick={handleStartNewAnalysis} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Try Again</button></div>; }
-    if (analysisResult) { return (<div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg print-reset-layout"><div className="flex justify-between items-center mb-6 border-b pb-4 no-print"><h2 className="text-2xl font-bold truncate pr-4" title={fileName}>{fileName}</h2><button onClick={handleStartNewAnalysis} className="flex-shrink-0 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300 font-semibold">Analyze New</button></div><div className="no-print">{!isCurrentArticleSaved ? (<div className="mb-6"><SaveToLibraryForm onSave={handleSaveToLibrary} /></div>) : (<div className="mb-6 p-4 bg-green-50 rounded-lg flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><p className="text-green-800 font-medium">This analysis is saved in your library.</p></div>)}</div><div className="border-b border-gray-200 no-print"><nav className="-mb-px flex space-x-8"><button onClick={() => setCurrentView('summary')} className={`${currentView === 'summary' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300'} py-4 px-1 border-b-2 font-medium text-sm`}>Summary</button><button onClick={() => setCurrentView('quiz')} className={`${currentView === 'quiz' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300'} py-4 px-1 border-b-2 font-medium text-sm`}>Interactive Quiz</button><button onClick={() => setCurrentView('flashcards')} className={`${currentView === 'flashcards' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300'} py-4 px-1 border-b-2 font-medium text-sm`}>Flashcards</button></nav></div><div className="mt-6">{currentView === 'summary' && <SummaryView htmlContent={analysisResult.summary} fileName={fileName} />}{currentView === 'quiz' && <QuizView quizData={analysisResult.quiz} fileName={fileName} />}{currentView === 'flashcards' && <FlashcardsView flashcards={analysisResult.flashcards} fileName={fileName} />}</div></div>); }
+    if (analysisResult) { return (<div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg print-reset-layout"><div className="flex justify-between items-center mb-6 border-b pb-4 no-print"><h2 className="text-2xl font-bold truncate pr-4" title={fileName}>{fileName}</h2><button onClick={handleStartNewAnalysis} className="flex-shrink-0 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300 font-semibold">Analyze New</button></div><div className="no-print">{!isCurrentArticleSaved ? (<div className="mb-6"><SaveToLibraryForm onSave={handleSaveToLibrary} availableSpecialties={availableSpecialties} /></div>) : (<div className="mb-6 p-4 bg-green-50 rounded-lg flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><p className="text-green-800 font-medium">This analysis is saved in your library.</p></div>)}</div><div className="border-b border-gray-200 no-print"><nav className="-mb-px flex space-x-8"><button onClick={() => setCurrentView('summary')} className={`${currentView === 'summary' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300'} py-4 px-1 border-b-2 font-medium text-sm`}>Summary</button><button onClick={() => setCurrentView('quiz')} className={`${currentView === 'quiz' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300'} py-4 px-1 border-b-2 font-medium text-sm`}>Interactive Quiz</button><button onClick={() => setCurrentView('flashcards')} className={`${currentView === 'flashcards' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300'} py-4 px-1 border-b-2 font-medium text-sm`}>Flashcards</button></nav></div><div className="mt-6">{currentView === 'summary' && <SummaryView htmlContent={analysisResult.summary} fileName={fileName} />}{currentView === 'quiz' && <QuizView quizData={analysisResult.quiz} fileName={fileName} />}{currentView === 'flashcards' && <FlashcardsView flashcards={analysisResult.flashcards} fileName={fileName} />}</div></div>); }
     return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />;
   };
   
