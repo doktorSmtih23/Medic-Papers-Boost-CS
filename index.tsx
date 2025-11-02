@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -141,27 +140,51 @@ const responseSchema = {
     required: ['summary', 'quiz', 'flashcards']
 };
 
-async function generateMedicalAnalysis(pdfText: string): Promise<AnalysisResult> {
+async function generateMedicalAnalysis(pdfText: string, detailLevel: 'simple' | 'concrete' | 'deep'): Promise<AnalysisResult> {
     const API_KEY = process.env.API_KEY;
     if (!API_KEY) {
       throw new Error("API Key not found. Please select or enter an API Key to continue.");
     }
     const ai = new GoogleGenAI({ apiKey: API_KEY });
 
+    let detailInstruction = '';
+    switch (detailLevel) {
+        case 'simple':
+            detailInstruction = 'The user has selected: "Simple, para tener idea del tema". The summary must be a brief, high-level overview, written in simple language. Focus only on the document\'s main purpose and final conclusions. The target audience is someone who just wants to get a general idea of the topic quickly.';
+            break;
+        case 'concrete':
+            detailInstruction = 'The user has selected: "Concreto, tener conceptos fundamentales". The summary must be well-balanced and concise, focusing on the fundamental concepts, key methodologies, and principal findings. It should define the most important terms clearly. The target audience is someone who needs to understand the core pillars of the document without excessive detail.';
+            break;
+        case 'deep':
+            detailInstruction = 'The user has selected: "Profundo, para examenes". The summary must be profound, comprehensive, and detailed, suitable for exam preparation or in-depth study. It must include specifics about methodologies, data points, results, limitations, and clinical implications. Complex concepts must be explained thoroughly. The target audience is a professional or student who needs to master the subject matter.';
+            break;
+    }
+
     const model = 'gemini-2.5-pro';
     const prompt = `
         You are "Medic Papers Boost CS", an expert medical document processing and educational gamification assistant. Your purpose is to transform dense medical documents into three distinct, high-quality outputs: a Summary, an Assessment Quiz, and a set of Flashcards.
         Based on the provided medical document content, generate a JSON object with three root keys: "summary", "quiz", and "flashcards".
-        1.  **summary**: The value for this key must be a single, self-contained HTML string. This is the most critical output. It MUST be visually engaging and highly structured, not just flat text. Adhere strictly to the following structure and requirements:
-            *   **A Self-Contained \`<style>\` Block:** This is MANDATORY. Provide comprehensive CSS for a professional, modern, and **fully responsive** layout. Use professional color palettes (e.g., blues, grays). The base font should match the application: \`font-family: 'Inter', sans-serif;\`.
-            *   **HTML Body Content:**
-                *   **Main Title:** Start with an \`<h1>\` containing the document's main topic.
-                *   **Key Takeaways (Puntos Clave):** This section is MANDATORY. Generate the 5-7 most vital points. Display them in a responsive grid of visually distinct "cards" using the \`.card-grid\` and \`.card\` classes. Each card must have a border, a subtle shadow, and an icon.
-                *   **Thematic Sections:** For each major topic (e.g., Diagnosis, Treatment), create a \`<section>\`. Each section MUST begin with a styled \`<h2>\` containing a relevant inline SVG icon and the section title. The containing \`<section>\` tag MUST have NO background or border.
-                *   **Rich Content Formatting:** Use \`<strong>\`, \`<ul>\`, \`<table>\` (wrapped in a scrollable div), and \`<blockquote>\` (as "Clinical Pearls").
-                *   **Interactive Tooltips (MANDATORY):** Scan the text for at least 5-10 complex medical terms and wrap them in the tooltip structure: \`<span class="tooltip">Term<span class="tooltiptext">A brief definition.</span></span>\`.
-        2.  **quiz**: A JSON object for an "Interactive Quiz" with a title, settings, and an array of exactly 20 multiple-choice questions if possible.
+
+        1.  **summary**: A single, self-contained HTML string. This is the most critical output.
+            **CRITICAL INSTRUCTION FOR SUMMARY DETAIL:** Based on the user's choice, generate the summary with the following level of detail: ${detailInstruction}.
+            The summary's HTML MUST be visually engaging, professional, and well-structured.
+            *   **A Self-Contained \`<style>\` Block (MANDATORY):**
+                *   The CSS must create a professional, modern, and fully responsive layout using a professional color palette (e.g., blues, grays) and the 'Inter' font.
+                *   **Styled Tables:** Tables must be styled for clarity, be responsive (scroll horizontally on small screens), and have distinct headers and alternating row colors. Every \`<table>\` must be wrapped in a scrollable container.
+                *   **Clinical Pearls:** Style \`<blockquote>\` elements as prominent callouts with a colored background and border to highlight key clinical advice.
+                *   **Key Takeaway Cards:** Style a \`.card-grid\` container as a responsive grid. Individual \`.card\` elements inside should be visually distinct with borders, shadows, and a hover effect.
+                *   **Section Headers:** Style \`<h2>\` headers for clear hierarchy with a larger font, bold weight, and a bottom border.
+                *   **Print Styles:** Include a \`@media print\` rule. CRITICALLY, this rule must include \`page-break-inside: avoid !important;\` for cards, sections, blockquotes, and table wrappers to prevent them from splitting across pages. Also, optimize for printing by removing backgrounds/shadows and using black text.
+            *   **HTML Body Content (MANDATORY):**
+                *   **Structure:** Start with \`<h1>\` for the title. Use \`<section>\` for major topics, each starting with a styled \`<h2>\` that includes an inline SVG icon.
+                *   **Key Takeaways:** Generate 5-7 vital points inside the styled \`.card-grid\`.
+                *   **Rich Content:** Use standard semantic HTML like \`<strong>\`, \`<ul>\`, and the styled \`<table>\`s and \`<blockquote>\`s.
+                *   **Interactive Tooltips:** Find at least 5-10 complex medical terms and wrap them in \`<span class="tooltip">Term<span class="tooltiptext">Definition</span></span>\`. This is mandatory.
+
+        2.  **quiz**: A JSON object for an "Interactive Quiz" with a title, settings, and an array of 20 multiple-choice questions if possible.
+
         3.  **flashcards**: A JSON array of at least 10 flashcard objects, each with "term", "definition", and "topic".
+
         Here is the medical document content:
         ---
         ${pdfText}
@@ -231,6 +254,47 @@ const FileUpload: React.FC<{ onFileUpload: (file: File) => void; isLoading: bool
     </div>
   );
 };
+
+// --- components/SummaryDetailSelector.tsx ---
+type DetailLevel = 'simple' | 'concrete' | 'deep';
+const DetailOptionIconSimple = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.553L16.5 21.75l-.398-1.197a3.375 3.375 0 00-2.456-2.456L12.75 18l1.197-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.197a3.375 3.375 0 002.456 2.456L20.25 18l-1.197.398a3.375 3.375 0 00-2.456 2.456z" /></svg>;
+const DetailOptionIconConcrete = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.75h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5M21 4.5H3a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 003 19.5h18a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0021 4.5z" /></svg>;
+const DetailOptionIconDeep = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5M20.25 21.75l-2.25-2.25m0 0l-2.25 2.25m2.25-2.25V15m-4.5-5.25l-2.25-2.25m0 0l-2.25 2.25m2.25-2.25V3" /></svg>;
+
+const SummaryDetailSelector: React.FC<{
+    fileName: string;
+    detail: DetailLevel;
+    setDetail: (detail: DetailLevel) => void;
+    onStartAnalysis: () => void;
+}> = ({ fileName, detail, setDetail, onStartAnalysis }) => {
+    const options = [
+        { id: 'simple', icon: <DetailOptionIconSimple />, title: 'Simple', description: 'Para tener idea del tema' },
+        { id: 'concrete', icon: <DetailOptionIconConcrete />, title: 'Concreto', description: 'Tener conceptos fundamentales' },
+        { id: 'deep', icon: <DetailOptionIconDeep />, title: 'Profundo', description: 'Para examenes' },
+    ];
+    return (
+        <div className="bg-white p-8 rounded-lg shadow-lg text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Configurar Análisis</h2>
+            <p className="text-gray-600 mb-1">Archivo: <span className="font-medium text-gray-800">{fileName}</span></p>
+            <p className="text-gray-600 mb-8">Elige qué tan detallado quieres que sea el resumen.</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                {options.map(opt => (
+                    <button key={opt.id} onClick={() => setDetail(opt.id as DetailLevel)} className={`p-6 border-2 rounded-lg text-center transition-all duration-200 ${detail === opt.id ? 'border-blue-500 bg-blue-50 shadow-lg scale-105' : 'border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50'}`}>
+                        <div className="mx-auto w-fit mb-3">{opt.icon}</div>
+                        <h3 className="font-semibold text-lg text-gray-800">{opt.title}</h3>
+                        <p className="text-sm text-gray-500">{opt.description}</p>
+                    </button>
+                ))}
+            </div>
+
+            <button onClick={onStartAnalysis} className="w-full sm:w-auto px-10 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform hover:scale-105 transition-transform">
+                Generar Análisis
+            </button>
+        </div>
+    );
+};
+
 
 // --- components/SummaryView.tsx ---
 const PrintIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>;
@@ -478,6 +542,10 @@ function App() {
   const [isCheckingApiKey, setIsCheckingApiKey] = useState(true);
   const [isAiStudio, setIsAiStudio] = useState(false);
   const [manualApiKey, setManualApiKey] = useState('');
+  
+  const [summaryDetail, setSummaryDetail] = useState<DetailLevel>('concrete');
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+
 
   useEffect(() => { setLibrary(getLibrary()); }, []);
 
@@ -531,16 +599,26 @@ function App() {
   
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file) return;
-    setIsLoading(true);
     setError(null);
     setAnalysisResult(null);
     setIsCurrentArticleSaved(false);
     setFileName(file.name);
+    setPendingFile(file); // Set the file for the configuration step
     setAppState('analysis');
+  }, []);
+
+  const handleStartAnalysis = useCallback(async () => {
+    if (!pendingFile) return;
+
+    setIsLoading(true);
+    setError(null);
+    const fileToProcess = pendingFile;
+    setPendingFile(null); // Clear pending file, analysis is starting
+
     try {
-      const pdfText = await extractTextFromPdf(file);
+      const pdfText = await extractTextFromPdf(fileToProcess);
       if (pdfText.trim().length === 0) throw new Error("Could not extract text from PDF.");
-      const result = await generateMedicalAnalysis(pdfText);
+      const result = await generateMedicalAnalysis(pdfText, summaryDetail);
       setAnalysisResult(result);
       setCurrentView('summary');
     } catch (err) {
@@ -560,16 +638,22 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [pendingFile, summaryDetail]);
   
-  const handleResetToHome = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setAppState('home'); }
-  const handleStartNewAnalysis = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setAppState('analysis'); }
+  const handleResetToHome = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setPendingFile(null); setAppState('home'); }
+  const handleStartNewAnalysis = () => { localStorage.removeItem(LOCAL_STORAGE_KEY); setAnalysisResult(null); setError(null); setFileName(''); setPendingFile(null); setAppState('analysis'); }
   const handleViewLibrary = () => setAppState('library');
-  const handleViewSavedArticle = (article: SavedArticle) => { setAnalysisResult(article.analysisResult); setFileName(article.fileName); setIsCurrentArticleSaved(true); setCurrentView('summary'); setAppState('analysis'); };
+  const handleViewSavedArticle = (article: SavedArticle) => { setAnalysisResult(article.analysisResult); setFileName(article.fileName); setIsCurrentArticleSaved(true); setCurrentView('summary'); setPendingFile(null); setAppState('analysis'); };
   const handleSaveToLibrary = (specialty: string) => { if (analysisResult && fileName) { const updatedLibrary = saveArticle(fileName, specialty, analysisResult); setLibrary(updatedLibrary); setIsCurrentArticleSaved(true); } };
   const handleDeleteArticle = (articleId: string) => { if (window.confirm('Are you sure?')) { setLibrary(deleteArticle(articleId)); } };
   
-  const renderAnalysisView = () => { if (isLoading) { return <div className="text-center p-10"><LoadingSpinner /><p className="mt-4">Analyzing...</p></div>; } if (error) { return <div className="text-center p-10 bg-red-50"><p className="text-red-700 font-semibold">An Error Occurred</p><p className="mt-2 text-red-600">{error}</p><button onClick={handleStartNewAnalysis} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">Try Again</button></div>; } if (analysisResult) { return (<div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg print-reset-layout"><div className="flex justify-between items-center mb-6 border-b pb-4 no-print"><h2 className="text-2xl font-bold truncate pr-4" title={fileName}>{fileName}</h2><button onClick={handleStartNewAnalysis} className="flex-shrink-0 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm">Analyze New</button></div><div className="no-print">{!isCurrentArticleSaved ? (<div className="mb-6"><SaveToLibraryForm onSave={handleSaveToLibrary} /></div>) : (<div className="mb-6 p-4 bg-green-50 rounded-lg flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><p className="text-green-800">This analysis is saved in your library.</p></div>)}</div><div className="border-b border-gray-200 no-print"><nav className="-mb-px flex space-x-8"><button onClick={() => setCurrentView('summary')} className={`${currentView === 'summary' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Summary</button><button onClick={() => setCurrentView('quiz')} className={`${currentView === 'quiz' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Interactive Quiz</button><button onClick={() => setCurrentView('flashcards')} className={`${currentView === 'flashcards' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Flashcards</button></nav></div><div className="mt-6">{currentView === 'summary' && <SummaryView htmlContent={analysisResult.summary} fileName={fileName} />}{currentView === 'quiz' && <QuizView quizData={analysisResult.quiz} fileName={fileName} />}{currentView === 'flashcards' && <FlashcardsView flashcards={analysisResult.flashcards} fileName={fileName} />}</div></div>); } return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />; };
+  const renderAnalysisView = () => { 
+    if (isLoading) { return <div className="text-center p-10"><LoadingSpinner /><p className="mt-4">Analyzing...</p></div>; } 
+    if (error) { return <div className="text-center p-10 bg-red-50"><p className="text-red-700 font-semibold">An Error Occurred</p><p className="mt-2 text-red-600">{error}</p><button onClick={handleStartNewAnalysis} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">Try Again</button></div>; } 
+    if (analysisResult) { return (<div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg print-reset-layout"><div className="flex justify-between items-center mb-6 border-b pb-4 no-print"><h2 className="text-2xl font-bold truncate pr-4" title={fileName}>{fileName}</h2><button onClick={handleStartNewAnalysis} className="flex-shrink-0 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm">Analyze New</button></div><div className="no-print">{!isCurrentArticleSaved ? (<div className="mb-6"><SaveToLibraryForm onSave={handleSaveToLibrary} /></div>) : (<div className="mb-6 p-4 bg-green-50 rounded-lg flex items-center gap-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><p className="text-green-800">This analysis is saved in your library.</p></div>)}</div><div className="border-b border-gray-200 no-print"><nav className="-mb-px flex space-x-8"><button onClick={() => setCurrentView('summary')} className={`${currentView === 'summary' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Summary</button><button onClick={() => setCurrentView('quiz')} className={`${currentView === 'quiz' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Interactive Quiz</button><button onClick={() => setCurrentView('flashcards')} className={`${currentView === 'flashcards' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'} py-4 px-1 border-b-2 font-medium text-sm`}>Flashcards</button></nav></div><div className="mt-6">{currentView === 'summary' && <SummaryView htmlContent={analysisResult.summary} fileName={fileName} />}{currentView === 'quiz' && <QuizView quizData={analysisResult.quiz} fileName={fileName} />}{currentView === 'flashcards' && <FlashcardsView flashcards={analysisResult.flashcards} fileName={fileName} />}</div></div>); } 
+    if (pendingFile) { return <SummaryDetailSelector fileName={fileName} detail={summaryDetail} setDetail={setSummaryDetail} onStartAnalysis={handleStartAnalysis} />; }
+    return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />; 
+  };
   
   const renderContent = () => {
     if (isCheckingApiKey) {
@@ -621,7 +705,7 @@ function App() {
         }
     }
       
-    switch (appState) { case 'home': return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; case 'library': return <LibraryView library={library} onViewArticle={handleViewSavedArticle} onGoHome={handleResetToHome} onDeleteArticle={handleDeleteArticle} />; case 'analysis': if (!analysisResult && !isLoading && !error) { return <FileUpload onFileUpload={handleFileUpload} isLoading={isLoading} />; } return renderAnalysisView(); default: return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; } };
+    switch (appState) { case 'home': return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; case 'library': return <LibraryView library={library} onViewArticle={handleViewSavedArticle} onGoHome={handleResetToHome} onDeleteArticle={handleDeleteArticle} />; case 'analysis': return renderAnalysisView(); default: return <Home onGetStarted={handleStartNewAnalysis} onViewLibrary={handleViewLibrary} />; } };
   return (<div className="min-h-screen bg-gray-100"><div className="no-print"><Header onViewLibrary={handleViewLibrary} /></div><main><div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 print-reset-layout"><div className="px-4 py-6 sm:px-0 print-reset-layout">{renderContent()}</div></div></main></div>);
 }
 
